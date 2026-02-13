@@ -246,7 +246,7 @@ debate: PostgreSQL vs DynamoDB for a multi-tenant SaaS with unpredictable query 
 
 ## Inspiration
 
-Inspired by Andrej Karpathy's [agent-council](https://github.com/karpathy/agent-council) — adapted as a Copilot CLI skill/agent with the dual-mode architecture.
+Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-council) — adapted as a Copilot CLI skill/agent with the dual-mode architecture.
 
 ## License
 
