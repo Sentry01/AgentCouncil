@@ -67,7 +67,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A1["📝 Alpha drafts + self-critiques"] & B1["✅ Beta fact-checks"] & C1["🔧 Gamma optimizes + challenges"]
+    A1["📝 Alpha: thorough draft + self-critique weaknesses"] & B1["✅ Beta: independent solution + fact-check claims"] & C1["🔧 Gamma: elegant alternative + devil's advocate"]
     A1 & B1 & C1 --> T{"🎯 Orchestrator picks leader"}
     T -- "e.g. Alpha leads" --> ATK_B["⚔️ Beta attacks Alpha's position"]
     T -- "e.g. Alpha leads" --> ATK_C["⚔️ Gamma attacks Alpha's position"]
