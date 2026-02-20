@@ -44,7 +44,7 @@ Follow the appropriate protocol below based on detected mode.
 
 ### Phase 1 — Draft (all 3 simultaneously)
 
-**Alpha (Deep Explorer)** — model: `claude-opus-4.6` (fallback: `gpt-5.2`):
+**Alpha (Deep Explorer)** — model: `claude-opus-4.6` (fallback: `gpt-5.3-codex`):
 > You are Alpha on an Agent Council (Collaborative mode).
 > Your role: Generate a comprehensive, creative response.
 >
@@ -56,7 +56,7 @@ Follow the appropriate protocol below based on detected mode.
 > 3. Add a '## Wild Ideas' section: propose at least one unconventional approach
 > Be expansive. This is brainstorming — breadth over polish.
 
-**Beta (Practical Builder)** — model: `gpt-5.2` (fallback: `gemini-3-pro-preview`):
+**Beta (Practical Builder)** — model: `gpt-5.3-codex` (fallback: `gemini-3-pro-preview`):
 > You are Beta on an Agent Council (Collaborative mode).
 > Your role: Ground the problem in reality while finding opportunities.
 >
@@ -107,7 +107,7 @@ Agent strengths: Alpha="depth and exploration", Beta="practical grounding", Gamm
 
 ### Phase 3 — Synthesize (orchestrator)
 
-Dispatch `general-purpose` subagent (model: `claude-opus-4.6`, fallback: `gpt-5.2`):
+Dispatch `general-purpose` subagent (model: `claude-opus-4.6`, fallback: `gpt-5.3-codex`):
 
 > You are the Orchestrator on an Agent Council (Collaborative mode — Synthesis).
 >
@@ -134,7 +134,7 @@ Dispatch `general-purpose` subagent (model: `claude-opus-4.6`, fallback: `gpt-5.
 
 ### Phase 1 — Draft (all 3 simultaneously)
 
-**Alpha (Drafter & Red Teamer)** — model: `claude-opus-4.6` (fallback: `gpt-5.2`):
+**Alpha (Drafter & Red Teamer)** — model: `claude-opus-4.6` (fallback: `gpt-5.3-codex`):
 > You are Alpha on an Agent Council (Adversarial mode).
 > Your dual role: Create a comprehensive response AND red-team your own work.
 >
@@ -144,7 +144,7 @@ Dispatch `general-purpose` subagent (model: `claude-opus-4.6`, fallback: `gpt-5.
 > 1. Write a thorough, nuanced response to the task
 > 2. Then add a section '## Self-Critique' where you flag assumptions, weaknesses, edge cases, uncertainties, and counter-arguments.
 
-**Beta (Fact-Checker & Validator)** — model: `gpt-5.2` (fallback: `gemini-3-pro-preview`):
+**Beta (Fact-Checker & Validator)** — model: `gpt-5.3-codex` (fallback: `gemini-3-pro-preview`):
 > You are Beta on an Agent Council (Adversarial mode).
 > Your role: Independent fact-checking and validation.
 >
@@ -195,7 +195,7 @@ Otherwise, forward the leading draft to the other two agents for attack.
 
 ### Phase 3 — Verdict (orchestrator)
 
-Dispatch `general-purpose` subagent (model: `claude-opus-4.6`, fallback: `gpt-5.2`):
+Dispatch `general-purpose` subagent (model: `claude-opus-4.6`, fallback: `gpt-5.3-codex`):
 
 > You are the Orchestrator on an Agent Council (Adversarial mode — Verdict).
 >

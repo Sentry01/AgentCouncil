@@ -30,10 +30,10 @@ The key insight: **the mode determines how they interact.**
 
 | # | Codename | Collaborative Role | Adversarial Role | Default Model | Fallback |
 |---|----------|--------------------|------------------|---------------|----------|
-| 1 | **Alpha** | Deep Explorer | Drafter & Red Teamer | `claude-opus-4.6` | `gpt-5.2` |
-| 2 | **Beta** | Practical Builder | Fact-Checker & Validator | `gpt-5.2` | `gemini-3-pro-preview` |
+| 1 | **Alpha** | Deep Explorer | Drafter & Red Teamer | `claude-opus-4.6` | `gpt-5.3-codex` |
+| 2 | **Beta** | Practical Builder | Fact-Checker & Validator | `gpt-5.3-codex` | `gemini-3-pro-preview` |
 | 3 | **Gamma** | Elegant Minimalist | Optimizer & Devil's Advocate | `gemini-3-pro-preview` | `claude-opus-4.6` |
-| 4 | **Orchestrator** | Author (writes final synthesis) | Judge (delivers verdict) | `claude-opus-4.6` | `gpt-5.2` |
+| 4 | **Orchestrator** | Author (writes final synthesis) | Judge (delivers verdict) | `claude-opus-4.6` | `gpt-5.3-codex` |
 
 You can swap any of these models — edit the files to match what you have access to.
 
@@ -213,6 +213,12 @@ The agents shift focus depending on what you're asking about:
 | Architecture | System design + failure modes | Tech claims, benchmarks, scalability | Simplicity, clarity, alternatives |
 | Research | Comprehensive analysis + bias check | Source verification, citations | Actionability, counter-arguments |
 | Writing | Content + tone self-critique | Factual accuracy, consistency | Flow, conciseness, formatting |
+
+## Example
+
+Here's the council in action — Phase 1 dispatching all three agents in parallel across different model families:
+
+![Council Phase 1 — three agents dispatched in parallel](docs/council-example.png)
 
 ## Example prompts
 

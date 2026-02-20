@@ -29,10 +29,10 @@ Add two explicit modes to the council, both built on the same 3-agent + orchestr
 
 | Role | Model | Fallback |
 |------|-------|----------|
-| Alpha | claude-opus-4.6 | gpt-5.2 |
-| Beta | gpt-5.2 | gemini-3-pro-preview |
+| Alpha | claude-opus-4.6 | gpt-5.3-codex |
+| Beta | gpt-5.3-codex | gemini-3-pro-preview |
 | Gamma | gemini-3-pro-preview | claude-opus-4.6 |
-| Orchestrator | claude-opus-4.6 | gpt-5.2 |
+| Orchestrator | claude-opus-4.6 | gpt-5.3-codex |
 
 ### Mode Detection
 
