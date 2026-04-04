@@ -389,7 +389,23 @@ Both new modes add one extra parallel round. Wall-clock time increases by roughl
 ## Implementation Notes
 
 - Mode detection happens in the skill's preamble, before dispatching agents
+- **Domain detection** also happens in the preamble — classifies the task as code/architecture/research/writing/general and injects domain-specific focus instructions into Phase 1 prompts
 - The triage step in adversarial mode (picking the leader) is done by the main agent, not a subagent — keeps it fast
-- Consensus-skip in adversarial mode avoids wasting compute when all agents agree
+- Consensus-skip in adversarial mode avoids wasting compute when all agents agree — but requires **all 4 criteria** (same approach, no critical flags, no contradictions, high confidence)
+- **Partial consensus** in adversarial mode: when agents agree on most points, the attack phase focuses only on contested areas rather than the full position
 - No consensus-skip in collaborative mode — the improve round adds value even with agreement
 - Both modes support the same `verbose` / `show debate` trigger for transparency
+- **Confidence signaling**: all agents annotate major claims with HIGH/MEDIUM/LOW confidence; the orchestrator uses these to weight inputs and focus scrutiny
+- **Disagreement surfacing** (collaborative): the improve phase explicitly asks agents to flag disagreements rather than silently dropping conflicting ideas
+- **Dropped idea tracking** (collaborative): agents list significant ideas they chose not to incorporate, giving the orchestrator a chance to rescue lost value
+- **Orchestrator bias mitigation**: the orchestrator prompt explicitly warns against favoring Alpha (same model family) — judges all contributions on merit
+- **Original drafts passed to orchestrator** (collaborative): the synthesizer receives both improved and original versions, preventing good ideas from being lost during cross-pollination
+- **Word limit** (1500 words per agent): keeps context window pressure manageable without degrading response quality
+
+## Performance Notes
+
+All improvements are prompt-level changes within existing phases. No new sequential steps were added:
+- Collaborative: still 3 phases (Draft → Improve → Synthesize), 2 parallel rounds
+- Adversarial: still 3 phases (Draft → Triage → Attack → Verdict), 2 parallel rounds
+- Wall-clock time unchanged: ~2 sequential subagent calls regardless of improvements
+- The 1500-word soft cap on Phase 1 actually improves Phase 2 latency by reducing input token count
