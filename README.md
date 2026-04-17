@@ -69,6 +69,7 @@ flowchart TD
 flowchart TD
     A1["📝 Alpha: thorough draft + self-critique"] & B1["✅ Beta: independent solution + fact-check"] & C1["🔧 Gamma: elegant alternative + devil's advocate"]
     A1 & B1 & C1 --> T{"🎯 Orchestrator triages"}
+    T -- "full consensus" --> V
     T -- "leader selected" --> ATK_B["⚔️ Beta attacks leader"]
     T -- "leader selected" --> ATK_C["⚔️ Gamma attacks leader"]
     ATK_B & ATK_C --> V["🏛️ Orchestrator delivers verdict"]
