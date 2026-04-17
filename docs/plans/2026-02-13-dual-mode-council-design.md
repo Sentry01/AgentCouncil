@@ -4,14 +4,21 @@
 
 The current Fast Triad runs in a single mode where each agent has a fixed role and the orchestrator merges outputs. This works well for general cross-validation, but two distinct use cases need different agent dynamics:
 
-1. **Adversarial** — Stress-test an answer through debate to find the strongest position
-2. **Collaborative** — Build together to discover novel solutions to complex problems
+1. **Adversarial** — stress-test an answer through debate to find the strongest position
+2. **Collaborative** — build together to discover novel solutions to complex problems
+
+The design also has to stay **fast and token-economic**. If the council spends too much context on intermediate material or runs on trivial tasks, it loses the advantage of parallelism.
 
 ## Approach
 
-Add two explicit modes to the council, both built on the same 3-agent + orchestrator foundation. Both use the same model assignments. Only prompts and phase flow change between modes.
+Add two explicit modes to the council, both built on the same 3-agent + orchestrator foundation. Both use the same default model assignments. Only prompts and phase flow change between modes.
 
 **Collaborative is the default mode.** Adversarial is triggered by specific keywords or explicit override.
+
+Three design rules keep the system efficient:
+- **Fast-path trivial tasks** — short-circuit and answer directly instead of dispatching a council
+- **One extra round only** — no recursive revision loops
+- **Lean synthesis** — in collaborative mode, the orchestrator reads the three improved drafts, not all six drafts
 
 ---
 
@@ -25,16 +32,30 @@ Add two explicit modes to the council, both built on the same 3-agent + orchestr
 | **Orchestrator role** | Judge (picks winner, resolves conflicts) | Author (writes final version from enriched inputs) |
 | **Default?** | No | Yes |
 
-### Model Assignments (unchanged, both modes)
+### Model Assignments
 
-| Role | Model | Fallback |
-|------|-------|----------|
-| Alpha | claude-opus-4.6 | gpt-5.3-codex |
-| Beta | gpt-5.3-codex | gemini-3-pro-preview |
-| Gamma | gemini-3-pro-preview | claude-opus-4.6 |
-| Orchestrator | claude-opus-4.6 | gpt-5.3-codex |
+| Role | Model |
+|------|-------|
+| Alpha | claude-opus-4.6 |
+| Beta | gpt-5.4 |
+| Gamma | gemini-3.1-pro |
+| Orchestrator | claude-opus-4.6 |
 
-### Mode Detection
+**Fallback policy:** preserve model-family diversity. If a seat's preferred model is unavailable, use an unused family. If that is impossible, run a smaller council instead of duplicating a family.
+
+### Routing Rules
+
+#### Complexity gate
+
+Short-circuit and answer directly when the task is trivial, single-step, or speed-sensitive:
+- arithmetic or obvious factual lookups
+- one-line rewrites
+- file lookups and command syntax
+- narrow questions with one obvious path
+
+Dispatch the council when the task has meaningful tradeoffs, correctness risk, or synthesis value.
+
+#### Mode detection
 
 ```
 ADVERSARIAL triggers:
@@ -48,6 +69,18 @@ COLLABORATIVE triggers (default):
 Explicit override:
   "adversarial council: ..." or "collaborative council: ..."
 ```
+
+If both adversarial and collaborative trigger words appear, adversarial wins unless the user gives an explicit override.
+
+#### Domain detection
+
+Use this precedence order to avoid ambiguous routing:
+
+**Code → Architecture → Writing → Research → General**
+
+- If the task includes source code, APIs, tests, bugs, PRs, files, or implementation details, classify it as **Code** even if it also says "review" or "analyze".
+- If the task is a system-level tradeoff across services, data, scaling, or deployment, classify it as **Architecture**.
+- Use **Research** only when the main job is investigation/evaluation rather than building or reviewing a concrete artifact. In this context, "review" means literature-style review, not code review.
 
 ---
 
@@ -65,8 +98,8 @@ Explicit override:
 │   Gamma ──┘                                                 │
 │                                                             │
 │ Phase 1.5: TRIAGE (orchestrator, lightweight — no subagent) │
-│   Main agent picks the LEADING POSITION                     │
-│   If strong consensus → skip to verdict (no attack needed)  │
+│   Main agent scores drafts with a fixed rubric              │
+│   If strong consensus → skip to verdict                     │
 │                                                             │
 │ Phase 2: ATTACK (2 agents parallel)                         │
 │   Non-leader agents receive the leading draft               │
@@ -82,74 +115,31 @@ Explicit override:
 
 ### Phase 1 — Draft
 
-Same as current Fast Triad. All 3 agents draft independently with self-critique sections.
+Same 3-agent parallel draft structure as before, but confidence is folded into the main writing instruction instead of repeated as a separate prompt step.
 
 ### Phase 1.5 — Triage
 
-The main agent (not a subagent) reads all 3 outputs and identifies the strongest position. If all 3 are in strong agreement, it **skips Phase 2** ("consensus detected — no adversarial round needed") and proceeds directly to verdict.
+The main agent reads all 3 outputs and identifies the strongest position. If all 3 are in strong agreement, it **skips Phase 2** ("consensus detected — no adversarial round needed") and proceeds directly to verdict.
+
+When consensus is not full, use this rubric:
+1. Correctness and evidence quality
+2. Coverage of the task's core constraints
+3. Actionability and clarity
+4. Severity and count of unresolved risks in critique sections
+5. Confidence profile
+
+Tie-breakers:
+- fewer unresolved high-severity issues
+- fewer hidden assumptions
+- more testable or operationally concrete guidance
 
 ### Phase 2 — Attack
 
-Two non-leader agents receive the leading draft and attack it:
-
-```
-"You are {Agent} on an Agent Council (Adversarial mode — Attack phase).
-
-You previously submitted your own draft. Now the Council Orchestrator has
-identified the LEADING POSITION below. Your job: tear it apart.
-
-ORIGINAL TASK: {user_task}
-
-YOUR ORIGINAL DRAFT:
-{this_agent_draft}
-
-LEADING POSITION (from {leader_agent}):
-{leader_draft}
-
-Instructions:
-1. Find every weakness, gap, wrong assumption, and logical flaw
-2. Where the leader's position contradicts YOUR draft, argue why yours is better
-3. Propose specific corrections or alternatives with evidence
-4. Rate the severity of each issue: FATAL / MAJOR / MINOR
-5. End with a verdict: should this position STAND, be MODIFIED, or be REJECTED?
-
-Be ruthless. Your job is to break this argument, not to be polite."
-```
+Two non-leader agents receive the leading draft and attack it. On **partial consensus**, the orchestrator narrows the attack to only the genuinely contested points so the council does not waste tokens relitigating settled ground.
 
 ### Phase 3 — Verdict
 
-```
-"You are the Orchestrator on an Agent Council (Adversarial mode — Verdict).
-
-A leading position was stress-tested by two opposing agents. Your job:
-deliver the final verdict.
-
-ORIGINAL TASK: {user_task}
-
-THE LEADING POSITION (from {leader_agent}):
-{leader_draft}
-
-ATTACK FROM {attacker_1}:
-{attack_1}
-
-ATTACK FROM {attacker_2}:
-{attack_2}
-
-ALL ORIGINAL DRAFTS (for reference):
-Alpha: {alpha_draft}
-Beta: {beta_draft}
-Gamma: {gamma_draft}
-
-Instructions:
-1. Evaluate each attack: Did it land? Is the criticism valid?
-2. Determine: Does the leading position SURVIVE, need MODIFICATION, or get OVERTURNED?
-3. If overturned → build the final answer from the strongest alternative
-4. If modified → incorporate valid criticisms into an improved version
-5. If survived → present it with a confidence boost
-6. Include a brief '## Confidence Assessment' noting how contested the answer was
-
-Output: The final ratified answer. Clean and polished, not meta-commentary."
-```
+The verdict prompt remains evidence-driven: it weighs the leading draft, the attacks, and the original drafts, then decides whether the leader survives, needs modification, or gets overturned.
 
 ---
 
@@ -180,232 +170,79 @@ Output: The final ratified answer. Clean and polished, not meta-commentary."
 
 ### Phase 1 — Draft
 
-Prompts shift from adversarial self-critique to exploratory ideation:
-
-**Alpha:**
-```
-"You are Alpha on an Agent Council (Collaborative mode).
-Your role: Generate a comprehensive, creative response.
-
-TASK: {user_task}
-
-Instructions:
-1. Write a thorough response exploring the problem space deeply
-2. Add a '## Open Questions' section: what aspects deserve more exploration?
-3. Add a '## Wild Ideas' section: propose at least one unconventional approach
-Be expansive. This is brainstorming — breadth over polish."
-```
-
-**Beta:**
-```
-"You are Beta on an Agent Council (Collaborative mode).
-Your role: Ground the problem in reality while finding opportunities.
-
-TASK: {user_task}
-
-Instructions:
-1. Write your response focused on practical, validated approaches
-2. Add a '## Building Blocks' section: what existing patterns/tools/techniques apply?
-3. Add a '## Combinations' section: what could be combined in novel ways?
-Be constructive. Find opportunities, not just constraints."
-```
-
-**Gamma:**
-```
-"You are Gamma on an Agent Council (Collaborative mode).
-Your role: Find the most elegant, minimal solution and open new angles.
-
-TASK: {user_task}
-
-Instructions:
-1. Write the simplest viable approach you can think of
-2. Add a '## Alternative Angles' section: reframe the problem from at least 2 different perspectives
-3. Add a '## What If' section: propose boundary-pushing variations
-Be creative. Simplicity and novelty over comprehensiveness."
-```
+Prompts remain role-specific and exploratory. Confidence stays, but it is folded into the primary writing instruction rather than consuming a separate numbered instruction.
 
 ### Phase 2 — Improve
 
-All 3 agents receive the other two agents' drafts and write an improved version:
+All 3 agents receive the other two agents' drafts and write an improved version. The improve prompt is intentionally slimmer:
+1. steal the best ideas
+2. combine complementary approaches
+3. drop weak or redundant material
+4. keep the agent's natural strength
+5. add an optional brief `## Tensions` section only when a strong idea remains unresolved or was intentionally left out
 
-```
-"You are {Agent} on an Agent Council (Collaborative mode — Improve phase).
-
-You submitted an initial draft. Now you've received the other two agents'
-work. Your job: write an IMPROVED version that's better than anything
-any of you produced alone.
-
-ORIGINAL TASK: {user_task}
-
-YOUR ORIGINAL DRAFT:
-{this_agent_draft}
-
-{OTHER_AGENT_1} DRAFT:
-{other_1_draft}
-
-{OTHER_AGENT_2} DRAFT:
-{other_2_draft}
-
-Instructions:
-1. Steal the best ideas from the other drafts shamelessly
-2. Combine approaches that complement each other
-3. Look for NOVEL SYNTHESES — ideas that emerge from combining perspectives
-   that none of you had individually
-4. Drop anything from your original that the others' work revealed as weak
-5. Keep your natural strength ({agent_strength}) but enrich it
-
-Output: Your improved, enriched response. Not a meta-commentary about
-what you borrowed — just the best version you can produce."
-```
-
-Where `{agent_strength}` is:
-- Alpha: "depth and exploration"
-- Beta: "practical grounding"
-- Gamma: "elegance and alternative angles"
+This preserves the benefits of cross-pollination without forcing every agent to emit multiple meta-sections.
 
 ### Phase 3 — Synthesize
 
-```
-"You are the Orchestrator on an Agent Council (Collaborative mode — Synthesis).
+The orchestrator receives only:
+- Alpha improved
+- Beta improved
+- Gamma improved
 
-Three agents brainstormed independently, then read each other's work and
-each submitted an improved version. You have incredibly rich raw material.
-
-ORIGINAL TASK: {user_task}
-
-ALPHA'S IMPROVED VERSION:
-{alpha_improved}
-
-BETA'S IMPROVED VERSION:
-{beta_improved}
-
-GAMMA'S IMPROVED VERSION:
-{gamma_improved}
-
-Instructions:
-1. Identify the BEST elements across all three improved versions
-2. Look for EMERGENT IDEAS — syntheses that appeared when agents combined
-   each other's thinking. These are the gold.
-3. Write the definitive response — not a summary, but the BEST POSSIBLE
-   version that leverages everything these three minds produced
-4. If any agent proposed something truly novel, make sure it's not lost
-5. Structure for maximum clarity and actionability
-
-Output: The final collaborative synthesis. This should be noticeably better
-than any single agent could have produced alone."
-```
+It does **not** receive all three original drafts by default. That was richer, but too expensive. The optional `## Tensions` notes are the lightweight escape hatch for rescuing genuinely valuable disagreements or omitted ideas.
 
 ---
 
-## Verbose Output Format
+## Output Modes
 
-### Adversarial Verbose
+### Default
 
-```
-## 🗡️ Council — Adversarial Mode
+Final answer only. No internal process.
 
-### Phase 1: Independent Drafts
+### Verbose
 
-📝 **Alpha** (Drafter & Red Teamer)
-{alpha_draft}
+Show the council as a **concise phase-by-phase view**:
+- draft summaries
+- improve/attack summaries
+- final synthesis or verdict
 
-✅ **Beta** (Fact-Checker & Validator)
-{beta_draft}
-
-🔧 **Gamma** (Optimizer & Devil's Advocate)
-{gamma_draft}
-
-### Phase 2: Attack Round
-
-🎯 **Leading Position:** {leader_agent}
-Reason: {why_this_was_selected}
-
-⚔️ **{attacker_1} attacks {leader_agent}:**
-{attack_1}
-
-⚔️ **{attacker_2} attacks {leader_agent}:**
-{attack_2}
-
-### Phase 3: Verdict
-
-🏛️ **Orchestrated Verdict**
-Status: {SURVIVED | MODIFIED | OVERTURNED}
-Confidence: {HIGH | MEDIUM | CONTESTED}
-
-{final_answer}
-```
-
-### Collaborative Verbose
-
-```
-## 🤝 Council — Collaborative Mode
-
-### Phase 1: Independent Explorations
-
-💡 **Alpha** (Deep Explorer)
-{alpha_draft}
-
-🔨 **Beta** (Practical Builder)
-{beta_draft}
-
-✨ **Gamma** (Elegant Minimalist)
-{gamma_draft}
-
-### Phase 2: Cross-Pollinated Improvements
-
-📝 **Alpha** (improved after reading Beta & Gamma)
-{alpha_improved}
-
-📝 **Beta** (improved after reading Alpha & Gamma)
-{beta_improved}
-
-📝 **Gamma** (improved after reading Alpha & Beta)
-{gamma_improved}
-
-### Phase 3: Final Synthesis
-
-🌟 **Orchestrated Synthesis**
-{final_synthesis}
-```
-
-### Non-Verbose (both modes)
-
-Just the final answer, no indication of internal process.
+Only show full raw drafts when the user explicitly asks for **raw** or **full** council output. This keeps terminal output readable and prevents verbose mode from exploding into multi-thousand-word dumps.
 
 ---
 
-## Cost & Speed Comparison
+## Domain Adaptation
 
-| Mode | Subagent Calls | Parallel Rounds | Sequential Steps |
-|------|----------------|-----------------|------------------|
-| Current Fast Triad | 4 (3 + orchestrator) | 1 | 2 |
-| Adversarial | 6 (3 + 2 attackers + orchestrator) | 2 | 3 |
-| Collaborative | 7 (3 + 3 improvers + orchestrator) | 2 | 3 |
-
-Both new modes add one extra parallel round. Wall-clock time increases by roughly the duration of one subagent call, not the sum of all of them.
+| Domain | Alpha Focus | Beta Focus | Gamma Focus |
+|--------|------------|-----------|-------------|
+| Code | Implementation + security self-review | API accuracy, versions, edge cases | Performance, readability, alternatives |
+| Architecture | System design + failure modes | Tech claims, benchmarks, scalability | Diagram clarity, simplicity, alternatives |
+| Research | Comprehensive analysis + bias check | Source verification, citations | Readability, actionability, counter-arguments |
+| Writing | Content + tone self-critique | Factual accuracy, consistency | Flow, conciseness, formatting |
 
 ---
 
 ## Implementation Notes
 
-- Mode detection happens in the skill's preamble, before dispatching agents
-- **Domain detection** also happens in the preamble — classifies the task as code/architecture/research/writing/general and injects domain-specific focus instructions into Phase 1 prompts
+- Mode detection happens in the skill/agent preamble, before dispatching agents
+- **Complexity gate** also happens in the preamble — the council should not run on trivial tasks
+- **Domain detection** uses an explicit precedence order to avoid ambiguous routing
 - The triage step in adversarial mode (picking the leader) is done by the main agent, not a subagent — keeps it fast
-- Consensus-skip in adversarial mode avoids wasting compute when all agents agree — but requires **all 4 criteria** (same approach, no critical flags, no contradictions, high confidence)
-- **Partial consensus** in adversarial mode: when agents agree on most points, the attack phase focuses only on contested areas rather than the full position
-- No consensus-skip in collaborative mode — the improve round adds value even with agreement
-- Both modes support the same `verbose` / `show debate` trigger for transparency
-- **Confidence signaling**: all agents annotate major claims with HIGH/MEDIUM/LOW confidence; the orchestrator uses these to weight inputs and focus scrutiny
-- **Disagreement surfacing** (collaborative): the improve phase explicitly asks agents to flag disagreements rather than silently dropping conflicting ideas
-- **Dropped idea tracking** (collaborative): agents list significant ideas they chose not to incorporate, giving the orchestrator a chance to rescue lost value
-- **Orchestrator bias mitigation**: the orchestrator prompt explicitly warns against favoring Alpha (same model family) — judges all contributions on merit
-- **Original drafts passed to orchestrator** (collaborative): the synthesizer receives both improved and original versions, preventing good ideas from being lost during cross-pollination
-- **Word limit** (1500 words per agent): keeps context window pressure manageable without degrading response quality
+- Consensus-skip in adversarial mode avoids wasting compute when all agents agree — but requires **all 4 criteria**
+- **Partial consensus** in adversarial mode narrows the attack phase to contested areas
+- No consensus-skip in collaborative mode — the improve round still adds value
+- **Confidence signaling** is retained, but folded into the main authoring instruction to reduce prompt clutter
+- **Disagreement surfacing** in collaborative mode is now conditional via optional `## Tensions`, not required meta-output
+- **Orchestrator bias mitigation** remains explicit because the orchestrator shares a model family with Alpha
 
 ## Performance Notes
 
 All improvements are prompt-level changes within the existing flow. No new sequential rounds were added:
 - Collaborative: still 3 phases (Draft → Improve → Synthesize), with 2 parallel agent rounds before synthesis
-- Adversarial: 4 named phases (Draft → Triage → Attack → Verdict), but still only 2 parallel agent rounds before the final verdict; triage is a lightweight gate on whether a full attack is needed
-- Wall-clock time unchanged: still 3 sequential stages end-to-end (two parallel agent rounds plus the final orchestrator/verdict step) regardless of improvements
-- The 1500-word soft cap on Phase 1 actually improves Phase 2 latency by reducing input token count
+- Adversarial: still 2 parallel rounds before the final verdict; triage is a lightweight gate
+- Wall-clock time is unchanged in the council path
+- Token economy improves because:
+  - trivial tasks short-circuit
+  - collaborative synthesis no longer ingests six drafts
+  - improve prompts emit less mandatory meta-text
+  - verbose mode defaults to concise summaries instead of full transcripts

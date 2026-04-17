@@ -3,10 +3,10 @@
 A skill and agent for [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/) that throws three different AI models at your problem in parallel — then either has them **build on each other's ideas** or **debate to stress-test the answer** — before an orchestrator delivers the final result.
 
 Two modes, same foundation:
-- **Collaborative** 🤝 (default) — Agents explore independently, read each other's work, improve their answers, then an orchestrator writes the best possible synthesis
-- **Adversarial** 🗡️ — Agents draft independently, the orchestrator picks the strongest position, the others attack it, then a verdict is delivered
+- **Collaborative** 🤝 (default) — agents explore independently, read each other's work, improve their answers, then an orchestrator writes the best possible synthesis
+- **Adversarial** 🗡️ — agents draft independently, the orchestrator picks the strongest position, the others attack it, then a verdict is delivered
 
-Fast enough for daily use. Thorough enough for decisions you'd regret getting wrong.
+Fast enough for daily use on hard problems. Smart enough to **decline the council entirely** when the task is too simple to justify the overhead.
 
 ## What's this for?
 
@@ -28,14 +28,14 @@ The key insight: **the mode determines how they interact.**
 
 ### The roles
 
-| # | Codename | Collaborative Role | Adversarial Role | Default Model | Fallback |
-|---|----------|--------------------|------------------|---------------|----------|
-| 1 | **Alpha** | Deep Explorer | Drafter & Red Teamer | `claude-opus-4.6` | `gpt-5.4` |
-| 2 | **Beta** | Practical Builder | Fact-Checker & Validator | `gpt-5.4` | `gemini-3.1-pro` |
-| 3 | **Gamma** | Elegant Minimalist | Optimizer & Devil's Advocate | `gemini-3.1-pro` | `claude-opus-4.6` |
-| 4 | **Orchestrator** | Author (writes final synthesis) | Judge (delivers verdict) | `claude-opus-4.6` | `gpt-5.4` |
+| # | Codename | Collaborative Role | Adversarial Role | Default Model |
+|---|----------|--------------------|------------------|---------------|
+| 1 | **Alpha** | Deep Explorer | Drafter & Red Teamer | `claude-opus-4.6` |
+| 2 | **Beta** | Practical Builder | Fact-Checker & Validator | `gpt-5.4` |
+| 3 | **Gamma** | Elegant Minimalist | Optimizer & Devil's Advocate | `gemini-3.1-pro` |
+| 4 | **Orchestrator** | Author (writes final synthesis) | Judge (delivers verdict) | `claude-opus-4.6` |
 
-You can swap any of these models — edit the files to match what you have access to.
+The council works best when each seat uses a **different model family**. If one model is unavailable, prefer another unused family; if that is impossible, run a smaller council instead of duplicating a family.
 
 ## How it works
 
@@ -61,16 +61,16 @@ flowchart TD
 
 1. **Draft** — Alpha, Beta, and Gamma all explore the problem independently from their angle
 2. **Improve** — Each agent reads the other two drafts and writes an improved version, stealing the best ideas
-3. **Synthesize** — The orchestrator authors the definitive response from all three enriched perspectives
+3. **Synthesize** — The orchestrator authors the definitive response from the three improved drafts
 
 ### Adversarial Mode 🗡️
 
 ```mermaid
 flowchart TD
-    A1["📝 Alpha: thorough draft + self-critique weaknesses"] & B1["✅ Beta: independent solution + fact-check claims"] & C1["🔧 Gamma: elegant alternative + devil's advocate"]
-    A1 & B1 & C1 --> T{"🎯 Orchestrator picks leader"}
-    T -- "e.g. Alpha leads" --> ATK_B["⚔️ Beta attacks Alpha's position"]
-    T -- "e.g. Alpha leads" --> ATK_C["⚔️ Gamma attacks Alpha's position"]
+    A1["📝 Alpha: thorough draft + self-critique"] & B1["✅ Beta: independent solution + fact-check"] & C1["🔧 Gamma: elegant alternative + devil's advocate"]
+    A1 & B1 & C1 --> T{"🎯 Orchestrator triages"}
+    T -- "leader selected" --> ATK_B["⚔️ Beta attacks leader"]
+    T -- "leader selected" --> ATK_C["⚔️ Gamma attacks leader"]
     ATK_B & ATK_C --> V["🏛️ Orchestrator delivers verdict"]
     V --> E["SURVIVED ✅ / MODIFIED 🔄 / OVERTURNED ❌"]
 
@@ -84,8 +84,8 @@ flowchart TD
     style E fill:#2ecc71,color:#fff
 ```
 
-1. **Draft** — Alpha, Beta, and Gamma all tackle the problem independently (same as collaborative)
-2. **Triage** — The orchestrator identifies the strongest position. If consensus, skip to verdict.
+1. **Draft** — Alpha, Beta, and Gamma all tackle the problem independently
+2. **Triage** — The orchestrator uses a fixed rubric to identify the strongest position. If consensus, skip to verdict.
 3. **Attack** — The other two agents try to tear apart the leading position
 4. **Verdict** — The orchestrator decides: did the leader survive, need modification, or get overturned?
 
@@ -130,6 +130,24 @@ The council automatically detects which mode to use based on your language:
 
 **Collaborative triggers (default):** council, siege, swarm, brainstorm, collaborate, explore, build on, novel, creative, ideas
 
+If both sets of trigger words appear, adversarial wins unless you use an explicit override like `collaborative council: ...`.
+
+### Complexity gate
+
+The council should **short-circuit** and answer directly when the task is too simple to justify 6-7 subagent calls.
+
+Typical fast-path cases:
+- arithmetic or obvious factual lookups
+- one-line rewrites
+- file lookups and command syntax
+- narrow questions with one obvious path
+
+Typical council-worthy cases:
+- competing designs with real tradeoffs
+- security or correctness-sensitive review
+- architecture and research synthesis
+- ambiguous problems where multi-perspective synthesis can beat one model
+
 ### Inside a Copilot CLI session
 
 ```
@@ -152,25 +170,18 @@ copilot --agent AgentCouncil "Stress-test this auth flow for vulnerabilities"
 
 ### Seeing the internal process
 
-By default you only get the final answer. If you want to see what each agent said:
+By default you only get the final answer. If you want to see the reasoning flow:
 
 ```
 verbose council: What caching strategy for a real-time dashboard?
 ```
 
-**Collaborative verbose** shows:
-- 💡 Alpha (Deep Explorer)
-- 🔨 Beta (Practical Builder)
-- ✨ Gamma (Elegant Minimalist)
-- 📝 Improved versions after cross-pollination
-- 🌟 Orchestrated Synthesis
+**Verbose mode** shows a concise phase-by-phase view:
+- 💡 Alpha / 🔨 Beta / ✨ Gamma
+- improved drafts or attack summaries
+- final synthesis or verdict
 
-**Adversarial verbose** shows:
-- 📝 Alpha (Drafter & Red Teamer)
-- ✅ Beta (Fact-Checker & Validator)
-- 🔧 Gamma (Optimizer & Devil's Advocate)
-- 🎯 Leading Position + ⚔️ Attacks
-- 🏛️ Verdict (SURVIVED / MODIFIED / OVERTURNED)
+If you want every draft in full, ask for **raw** or **full** council output explicitly.
 
 ## When to use each mode
 
@@ -192,16 +203,18 @@ verbose council: What caching strategy for a real-time dashboard?
 
 - Quick fixes, file lookups, simple questions
 - Anything where speed matters more than correctness
-- Your model budget is tight (collaborative uses 7 calls, adversarial uses 6)
+- Your model budget is tight
 
 ## Cost & speed
 
 | Mode | Subagent Calls | Parallel Rounds | Wall Clock |
 |------|----------------|-----------------|------------|
-| Collaborative | 7 (3 + 3 + orchestrator) | 2 | ~2 rounds |
-| Adversarial | 6 (3 + 2 + orchestrator) | 2 | ~2 rounds |
+| Collaborative | 7 (3 + 3 + orchestrator) | 2 | ~2 rounds + synthesis |
+| Adversarial | 6 (3 + 2 + orchestrator) | 2 | ~2 rounds + verdict |
 
-Both modes run agents in parallel within each phase. The wall-clock time is roughly two sequential subagent calls, regardless of how many agents run in each round.
+Both modes run agents in parallel within each phase. The wall-clock time is roughly two sequential subagent calls plus the final orchestrator step, regardless of how many agents run in each round.
+
+For trivial tasks, the correct move is to skip the council entirely.
 
 ## Adapting to domains
 
@@ -213,6 +226,10 @@ The agents shift focus depending on what you're asking about:
 | Architecture | System design + failure modes | Tech claims, benchmarks, scalability | Simplicity, clarity, alternatives |
 | Research | Comprehensive analysis + bias check | Source verification, citations | Actionability, counter-arguments |
 | Writing | Content + tone self-critique | Factual accuracy, consistency | Flow, conciseness, formatting |
+
+Domain precedence is: **Code → Architecture → Writing → Research → General**.
+
+Here, **Research** means investigation or literature-style evaluation, not code review.
 
 ## Example
 
