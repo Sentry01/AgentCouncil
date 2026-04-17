@@ -20,7 +20,9 @@ Dispatch 3 subagents in parallel with distinct cognitive roles, then orchestrate
 
 ## Mode Detection
 
-**Step 0 — before dispatching any agents**, determine the mode:
+**Step 0 — before dispatching any agents**, determine the mode AND domain:
+
+**Mode Detection:**
 
 **Adversarial** triggers (any of these in the user's message):
 - "debate", "adversarial", "challenge", "stress-test", "stress test"
@@ -35,6 +37,15 @@ Dispatch 3 subagents in parallel with distinct cognitive roles, then orchestrate
 - "collaborative council: ..." → collaborative mode
 
 If no trigger matches, default to **collaborative**.
+
+**Domain Detection:**
+
+Classify the task to determine focus instructions for each agent:
+- **Code**: mentions code, implementation, function, bug, API, programming, refactor, debug, test
+- **Architecture**: mentions system design, infrastructure, scaling, database choice, service, deployment
+- **Research**: mentions research, analysis, study, compare, evaluate, review, investigate
+- **Writing**: mentions write, draft, document, blog, copy, content, email, proposal
+- **General**: anything that doesn't clearly fit above (use default prompts, omit domain focus)
 
 ## Verbosity
 
@@ -87,11 +98,14 @@ Your role: Generate a comprehensive, creative response.
 
 TASK: {user_task}
 
+{domain_focus_alpha}
+
 Instructions:
 1. Write a thorough response exploring the problem space deeply
-2. Add a '## Open Questions' section: what aspects deserve more exploration?
-3. Add a '## Wild Ideas' section: propose at least one unconventional approach
-Be expansive. This is brainstorming — breadth over polish."
+2. For each major claim or recommendation, indicate your confidence: HIGH / MEDIUM / LOW
+3. Add a '## Open Questions' section: what aspects deserve more exploration?
+4. Add a '## Wild Ideas' section: propose at least one unconventional approach
+Keep your response under 1500 words. Be expansive but focused — breadth over polish."
 )
 ```
 
@@ -105,11 +119,14 @@ Your role: Ground the problem in reality while finding opportunities.
 
 TASK: {user_task}
 
+{domain_focus_beta}
+
 Instructions:
 1. Write your response focused on practical, validated approaches
-2. Add a '## Building Blocks' section: what existing patterns/tools/techniques apply?
-3. Add a '## Combinations' section: what could be combined in novel ways?
-Be constructive. Find opportunities, not just constraints."
+2. For each major claim or recommendation, indicate your confidence: HIGH / MEDIUM / LOW
+3. Add a '## Building Blocks' section: what existing patterns/tools/techniques apply?
+4. Add a '## Combinations' section: what could be combined in novel ways?
+Keep your response under 1500 words. Be constructive — find opportunities, not just constraints."
 )
 ```
 
@@ -123,13 +140,20 @@ Your role: Find the most elegant, minimal solution and open new angles.
 
 TASK: {user_task}
 
+{domain_focus_gamma}
+
 Instructions:
 1. Write the simplest viable approach you can think of
-2. Add a '## Alternative Angles' section: reframe the problem from at least 2 different perspectives
-3. Add a '## What If' section: propose boundary-pushing variations
-Be creative. Simplicity and novelty over comprehensiveness."
+2. For each major claim or recommendation, indicate your confidence: HIGH / MEDIUM / LOW
+3. Add a '## Alternative Angles' section: reframe the problem from at least 2 different perspectives
+4. Add a '## What If' section: propose boundary-pushing variations
+Keep your response under 1500 words. Be creative — simplicity and novelty over comprehensiveness."
 )
 ```
+
+**Domain Focus** (`{domain_focus_*}` is set based on detected domain, omitted for General):
+
+See the later **## Domain Adaptation** section for the canonical per-domain Alpha/Beta/Gamma focus definitions.
 
 ### Phase 2 — Improve (parallel)
 
@@ -163,9 +187,14 @@ Instructions:
    that none of you had individually
 4. Drop anything from your original that the others' work revealed as weak
 5. Keep your natural strength ({agent_strength}) but enrich it
+6. If you genuinely DISAGREE with something in another agent's draft,
+   do NOT silently drop it — add a '## Disagreements' section explaining
+   your position and why you believe it's stronger
+7. Add a brief '## Dropped Ideas' line listing anything significant you
+   chose not to incorporate and why
 
-Output: Your improved, enriched response. Not a meta-commentary about
-what you borrowed — just the best version you can produce."
+Output: Your improved, enriched response with disagreements and dropped
+ideas flagged at the end."
 )
 ```
 
@@ -185,6 +214,9 @@ task(
 Three agents brainstormed independently, then read each other's work and
 each submitted an improved version. You have incredibly rich raw material.
 
+Important: One of the agents (Alpha) used the same model family as you.
+Do not give it preferential treatment — judge all contributions on merit alone.
+
 ORIGINAL TASK: {user_task}
 
 ALPHA'S IMPROVED VERSION:
@@ -196,14 +228,24 @@ BETA'S IMPROVED VERSION:
 GAMMA'S IMPROVED VERSION:
 {gamma_improved}
 
+ORIGINAL DRAFTS (check for valuable ideas lost during improvement):
+Alpha original: {alpha_draft}
+Beta original: {beta_draft}
+Gamma original: {gamma_draft}
+
 Instructions:
 1. Identify the BEST elements across all three improved versions
 2. Look for EMERGENT IDEAS — syntheses that appeared when agents combined
    each other's thinking. These are the gold.
-3. Write the definitive response — not a summary, but the BEST POSSIBLE
+3. Check any '## Disagreements' sections — where agents flagged genuine
+   tensions, weigh both sides and make a clear call
+4. Scan '## Dropped Ideas' and original drafts — rescue anything valuable
+   that was lost during improvement
+5. Use confidence ratings from the agents to weight contributions:
+   HIGH-confidence claims need less scrutiny, LOW-confidence claims need more
+6. Write the definitive response — not a summary, but the BEST POSSIBLE
    version that leverages everything these three minds produced
-4. If any agent proposed something truly novel, make sure it's not lost
-5. Structure for maximum clarity and actionability
+7. Structure for maximum clarity and actionability
 
 Output: The final collaborative synthesis. This should be noticeably better
 than any single agent could have produced alone."
@@ -249,15 +291,18 @@ Your dual role: Create a comprehensive response AND red-team your own work.
 
 TASK: {user_task}
 
+{domain_focus_alpha}
+
 Instructions:
 1. Write a thorough, nuanced response to the task
-2. Then add a section '## Self-Critique' where you:
+2. For each major claim or recommendation, indicate your confidence: HIGH / MEDIUM / LOW
+3. Then add a section '## Self-Critique' where you:
    - Flag any assumptions you made
    - Identify weaknesses or edge cases in your response
    - Note areas where you're uncertain
    - List potential counter-arguments
 
-Be thorough in both the draft AND the self-critique."
+Keep your response under 1500 words. Be thorough in both the draft AND the self-critique."
 )
 ```
 
@@ -271,18 +316,21 @@ Your role: Independent fact-checking and validation of the task requirements.
 
 TASK: {user_task}
 
+{domain_focus_beta}
+
 Instructions:
 1. Analyze the task independently — produce your OWN solution/response
-2. Focus especially on:
+2. For each major claim or recommendation, indicate your confidence: HIGH / MEDIUM / LOW
+3. Focus especially on:
    - Factual accuracy of any claims or technical details
    - Edge cases and boundary conditions
    - Security or safety considerations
    - Real-world validity and practicality
    - Version numbers, API correctness, tool names
-3. Use web_search to verify claims when possible
-4. Flag anything with severity: CRITICAL / IMPORTANT / MINOR
+4. Use web_search to verify claims when possible
+5. Flag anything with severity: CRITICAL / IMPORTANT / MINOR
 
-Output your independent response followed by a '## Validation Notes' section."
+Keep your response under 1500 words. Output your independent response followed by a '## Validation Notes' section."
 )
 ```
 
@@ -296,27 +344,39 @@ Your role: Propose the most elegant, efficient solution AND play devil's advocat
 
 TASK: {user_task}
 
+{domain_focus_gamma}
+
 Instructions:
 1. Produce your OWN response optimized for:
    - Clarity and scannability
    - Minimal complexity (simplest viable approach)
    - Actionability (user can execute immediately)
    - Proper formatting (tables, lists, code blocks as appropriate)
-2. Then add a '## Devil's Advocate' section where you:
+2. For each major claim or recommendation, indicate your confidence: HIGH / MEDIUM / LOW
+3. Then add a '## Devil's Advocate' section where you:
    - Argue against the obvious approach
    - Propose at least one alternative solution
    - Identify what could go wrong
    - Question unstated assumptions
 
-Be concise but thorough."
+Keep your response under 1500 words. Be concise but thorough."
 )
 ```
 
 ### Phase 1.5 — Triage (main agent, no subagent)
 
-Read all 3 outputs. Identify the **leading position** — the draft that is strongest overall. If all 3 are in strong agreement, **skip Phase 2** and proceed directly to Phase 3 ("Consensus detected — no adversarial round needed").
+Read all 3 outputs. Assess agreement level and identify the leading position.
 
-Otherwise, note which agent produced the leading position and forward it to the other two for attack.
+**Consensus criteria — ALL must be true to skip Phase 2:**
+1. All three agents recommend the same core approach or conclusion
+2. No CRITICAL or FATAL severity flags in any self-critique, validation, or devil's advocate section
+3. No direct contradictions between agents on key claims
+4. Confidence ratings are predominantly HIGH across all agents
+
+**Triage outcomes:**
+- **Full consensus** → Skip Phase 2, go straight to Phase 3 ("Consensus detected — no adversarial round needed")
+- **Partial consensus** → Identify areas of agreement AND areas of disagreement. Forward to Phase 2 with focused attack instruction: "Focus your attack ONLY on these contested areas: {contested_points}. These points have consensus — do not relitigate: {agreed_points}."
+- **No consensus** → Identify the leading position (strongest overall draft) and forward the full draft to Phase 2 for open attack.
 
 ### Phase 2 — Attack (2 agents parallel)
 
@@ -339,16 +399,23 @@ YOUR ORIGINAL DRAFT:
 LEADING POSITION (from {leader_agent}):
 {leader_draft}
 
+{partial_consensus_instruction}
+
 Instructions:
 1. Find every weakness, gap, wrong assumption, and logical flaw
 2. Where the leader's position contradicts YOUR draft, argue why yours is better
 3. Propose specific corrections or alternatives with evidence
-4. Rate the severity of each issue: FATAL / MAJOR / MINOR
-5. End with a verdict: should this position STAND, be MODIFIED, or be REJECTED?
+4. Use the leader's confidence ratings — focus extra scrutiny on LOW-confidence claims
+5. Rate the severity of each issue: FATAL / MAJOR / MINOR
+6. End with a verdict: should this position STAND, be MODIFIED, or be REJECTED?
 
 Be ruthless. Your job is to break this argument, not to be polite."
 )
 ```
+
+`{partial_consensus_instruction}` — set by triage outcome:
+- **Partial consensus**: "Focus your attack ONLY on these contested areas: {contested_points}. These points have consensus — do not relitigate: {agreed_points}."
+- **No consensus**: (omit — attack the full position)
 
 ### Phase 3 — Verdict (orchestrator)
 
@@ -360,6 +427,9 @@ task(
 
 A leading position was stress-tested by two opposing agents. Your job:
 deliver the final verdict.
+
+Important: One of the agents (Alpha) used the same model family as you.
+Do not give it preferential treatment — judge all contributions on merit alone.
 
 ORIGINAL TASK: {user_task}
 
@@ -379,11 +449,14 @@ Gamma: {gamma_draft}
 
 Instructions:
 1. Evaluate each attack: Did it land? Is the criticism valid?
+   Use confidence ratings from original drafts — LOW-confidence claims
+   that were attacked carry less weight
 2. Determine: Does the leading position SURVIVE, need MODIFICATION, or get OVERTURNED?
 3. If overturned → build the final answer from the strongest alternative
 4. If modified → incorporate valid criticisms into an improved version
 5. If survived → present it with a confidence boost
 6. Include a brief '## Confidence Assessment' noting how contested the answer was
+   and which areas remain uncertain
 
 Output: The final ratified answer. Clean and polished, not meta-commentary."
 )
@@ -491,8 +564,11 @@ Both modes add one extra parallel round over the original Fast Triad. Wall-clock
 ## Common Mistakes
 
 - **Don't run agents sequentially** — All three MUST run in parallel for speed
-- **Don't force disagreements** — If agents agree, that's a strong signal (adversarial mode skips attack on consensus)
+- **Don't force disagreements** — If agents agree, that's a strong signal (adversarial mode skips attack on full consensus)
 - **Don't skip the orchestrator** — Raw agent outputs need merging/authoring, not concatenation
 - **Don't use for trivial tasks** — Still has overhead; use proportionally
 - **Don't mix mode prompts** — Collaborative agents explore, adversarial agents critique. Keep them distinct.
 - **Don't skip the improve round in collaborative** — Even with agreement, cross-pollination adds value
+- **Don't skip domain detection** — Always classify the task domain in Step 0 and inject focus instructions
+- **Don't ignore confidence ratings** — Agents flag HIGH/MEDIUM/LOW confidence for a reason; the orchestrator must use them to weight inputs
+- **Don't treat partial consensus as no consensus** — When agents agree on most points but disagree on specifics, focus the attack on contested areas only
