@@ -153,12 +153,7 @@ Keep your response under 1500 words. Be creative — simplicity and novelty over
 
 **Domain Focus** (`{domain_focus_*}` is set based on detected domain, omitted for General):
 
-| Domain | Alpha | Beta | Gamma |
-|--------|-------|------|-------|
-| Code | "Focus on implementation depth and security self-review." | "Focus on API accuracy, version correctness, and edge cases." | "Focus on performance, readability, and alternative patterns." |
-| Architecture | "Focus on system design and failure mode analysis." | "Focus on technology claims, benchmarks, and scalability." | "Focus on diagram clarity, simplicity, and alternatives." |
-| Research | "Focus on comprehensive analysis and bias checking." | "Focus on source verification, citations, and methodology." | "Focus on readability, actionability, and counter-arguments." |
-| Writing | "Focus on content depth and tone self-critique." | "Focus on factual accuracy and consistency." | "Focus on flow, conciseness, and formatting." |
+See the later **## Domain Adaptation** section for the canonical per-domain Alpha/Beta/Gamma focus definitions.
 
 ### Phase 2 — Improve (parallel)
 

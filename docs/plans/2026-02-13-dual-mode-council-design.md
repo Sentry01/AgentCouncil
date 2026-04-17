@@ -404,8 +404,8 @@ Both new modes add one extra parallel round. Wall-clock time increases by roughl
 
 ## Performance Notes
 
-All improvements are prompt-level changes within existing phases. No new sequential steps were added:
-- Collaborative: still 3 phases (Draft → Improve → Synthesize), 2 parallel rounds
-- Adversarial: still 3 phases (Draft → Triage → Attack → Verdict), 2 parallel rounds
-- Wall-clock time unchanged: ~2 sequential subagent calls regardless of improvements
+All improvements are prompt-level changes within the existing flow. No new sequential rounds were added:
+- Collaborative: still 3 phases (Draft → Improve → Synthesize), with 2 parallel agent rounds before synthesis
+- Adversarial: 4 named phases (Draft → Triage → Attack → Verdict), but still only 2 parallel agent rounds before the final verdict; triage is a lightweight gate on whether a full attack is needed
+- Wall-clock time unchanged: still 3 sequential stages end-to-end (two parallel agent rounds plus the final orchestrator/verdict step) regardless of improvements
 - The 1500-word soft cap on Phase 1 actually improves Phase 2 latency by reducing input token count

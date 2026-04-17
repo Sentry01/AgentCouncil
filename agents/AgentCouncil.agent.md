@@ -103,13 +103,7 @@ Follow the appropriate protocol below based on detected mode.
 
 **Domain Focus** (`{domain_focus_*}` is set based on detected domain):
 
-| Domain | `{domain_focus_alpha}` | `{domain_focus_beta}` | `{domain_focus_gamma}` |
-|--------|----------------------|---------------------|----------------------|
-| Code | "Focus on implementation depth and security self-review." | "Focus on API accuracy, version correctness, and edge cases." | "Focus on performance, readability, and alternative patterns." |
-| Architecture | "Focus on system design and failure mode analysis." | "Focus on technology claims, benchmarks, and scalability." | "Focus on diagram clarity, simplicity, and alternatives." |
-| Research | "Focus on comprehensive analysis and bias checking." | "Focus on source verification, citations, and methodology." | "Focus on readability, actionability, and counter-arguments." |
-| Writing | "Focus on content depth and tone self-critique." | "Focus on factual accuracy and consistency." | "Focus on flow, conciseness, and formatting." |
-| General | (omit — use default prompt) | (omit — use default prompt) | (omit — use default prompt) |
+Use the canonical domain→focus mappings defined in the later **## Domain Adaptation** section of this file. Set `{domain_focus_alpha}`, `{domain_focus_beta}`, and `{domain_focus_gamma}` from that section rather than maintaining a second copy here.
 
 ### Phase 2 — Improve (all 3 simultaneously)
 
