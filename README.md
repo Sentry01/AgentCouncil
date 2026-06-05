@@ -1,5 +1,7 @@
 # Agent Council
 
+![Agent Council — three models, one orchestrated answer](docs/images/agent-council-multi-model.svg)
+
 A skill and agent for [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/) that throws three different AI models at your problem in parallel — then either has them **build on each other's ideas** or **debate to stress-test the answer** — before an orchestrator delivers the final result.
 
 Two modes, same foundation:
