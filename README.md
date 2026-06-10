@@ -99,6 +99,34 @@ flowchart TD
 
 ## Install
 
+Agent Council is a Copilot CLI **plugin** — install it in one command and both the skill
+and the agent are registered automatically.
+
+```bash
+# Install straight from GitHub
+copilot plugin install Sentry01/AgentCouncil
+```
+
+Or install from a local checkout (handy for hacking on it):
+
+```bash
+git clone https://github.com/Sentry01/AgentCouncil.git
+copilot plugin install ./AgentCouncil
+```
+
+Manage it like any other plugin:
+
+```bash
+copilot plugin list                  # confirm it's installed
+copilot plugin update agent-council  # re-snapshot after local edits
+copilot plugin uninstall agent-council
+```
+
+No dependencies. No build. Just markdown files and a `plugin.json` that Copilot CLI reads.
+
+<details>
+<summary>Manual install (without the plugin system)</summary>
+
 ```bash
 git clone https://github.com/Sentry01/AgentCouncil.git
 cd AgentCouncil
@@ -112,7 +140,7 @@ mkdir -p ~/.copilot/agents
 cp agents/AgentCouncil.agent.md ~/.copilot/agents/AgentCouncil.agent.md
 ```
 
-No dependencies. No build. Just markdown files that Copilot CLI reads.
+</details>
 
 ## Usage
 

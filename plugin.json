@@ -1,0 +1,25 @@
+{
+  "name": "agent-council",
+  "description": "Throw three different AI models at a problem in parallel, then either have them build on each other's ideas (collaborative mode) or debate to stress-test the answer (adversarial mode) before an orchestrator delivers the final result. Ships a skill (trigger with `council:`, `debate:`, `brainstorm:`, `stress-test:`) and a standalone `AgentCouncil` agent. Automatically declines the council for trivial tasks.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Shlomi Shaki",
+    "url": "https://github.com/Sentry01"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Sentry01/AgentCouncil",
+  "repository": "https://github.com/Sentry01/AgentCouncil",
+  "keywords": [
+    "multi-agent",
+    "council",
+    "debate",
+    "brainstorm",
+    "orchestration",
+    "multi-model",
+    "stress-test",
+    "adversarial",
+    "collaborative"
+  ],
+  "skills": "skills/",
+  "agents": "agents/"
+}
