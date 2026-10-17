@@ -1,307 +1,205 @@
-# Agent Council
+# AgentCouncil
 
-![Agent Council — three models, one orchestrated answer](docs/images/agent-council-multi-model.svg)
+![AgentCouncil: three models, one orchestrated answer](docs/images/agent-council-multi-model.svg)
 
-A skill and agent for [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/) that throws three different AI models at your problem in parallel — then either has them **build on each other's ideas** or **debate to stress-test the answer** — before an orchestrator delivers the final result.
+AgentCouncil is a plugin for [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/) that puts a hard question to three models from different families at the same time. The models either build on each other's work or attack the strongest answer, and an orchestrator writes the final result.
 
-Two modes, same foundation:
-- **Collaborative** 🤝 (default) — agents explore independently, read each other's work, improve their answers, then an orchestrator writes the best possible synthesis
-- **Adversarial** 🗡️ — agents draft independently, the orchestrator picks the strongest position, the others attack it, then a verdict is delivered
+- **Collaborative mode** (default): each seat drafts, reads the other drafts, and improves its own. The orchestrator writes a synthesis.
+- **Adversarial mode**: each seat drafts, the orchestrator picks the leading answer, the other two attack it, and the orchestrator rules on it.
+- **Light or full effort**: simple questions get a quick 4-call pass. Hard ones get the full 5 to 7-call protocol.
 
-Fast enough for daily use on hard problems. Smart enough to **decline the council entirely** when the task is too simple to justify the overhead.
+## Why three model families
 
-## What's this for?
+A single model sounds confident even when it is wrong, and it rarely questions its own assumptions. Models from different vendors are trained differently and fail differently. Running one model from each family in parallel, then making them interact once, catches mistakes that any one of them would miss.
 
-This is a **[Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/)** extension. You need Copilot CLI installed and running. It won't work with regular GitHub Copilot in your editor — this is the terminal-based agent.
-
-It gives you two things:
-- A **skill** that triggers inside any Copilot CLI session (just type `council: your question`)
-- A **standalone agent** you can run directly (`copilot --agent AgentCouncil`)
-
-## Why three models?
-
-Ask one model a question and you get one perspective. It'll sound confident even when it's wrong. It won't question its own assumptions. It definitely won't try to break its own argument.
-
-Different models have different blind spots. Claude is good at nuance but might overcomplicate things. GPT might miss edge cases Claude catches. Gemini has strong grounding but different reasoning patterns. By running them all in parallel and then having them interact, you get something no single model can produce alone.
-
-The key insight: **the mode determines how they interact.**
-- In collaborative mode, they steal each other's best ideas and the result is a novel synthesis
-- In adversarial mode, they attack the strongest position and the result is a battle-tested answer
-
-### The roles
-
-| # | Codename | Collaborative Role | Adversarial Role | Default Model |
-|---|----------|--------------------|------------------|---------------|
-| 1 | **Alpha** | Deep Explorer | Drafter & Red Teamer | `claude-opus-4.6` |
-| 2 | **Beta** | Practical Builder | Fact-Checker & Validator | `gpt-5.4` |
-| 3 | **Gamma** | Elegant Minimalist | Optimizer & Devil's Advocate | `gemini-3.1-pro` |
-| 4 | **Orchestrator** | Author (writes final synthesis) | Judge (delivers verdict) | `claude-opus-4.6` |
-
-The council works best when each seat uses a **different model family**. If one model is unavailable, prefer another unused family; if that is impossible, run a smaller council instead of duplicating a family.
-
-## How it works
-
-### Collaborative Mode 🤝 (Default)
-
-```mermaid
-flowchart TD
-    A1["💡 Alpha explores deeply"] & B1["🔨 Beta grounds practically"] & C1["✨ Gamma finds elegance"]
-    A1 & B1 & C1 --> X["Each reads the others' work"]
-    X --> A2["Alpha improves"] & B2["Beta improves"] & C2["Gamma improves"]
-    A2 & B2 & C2 --> D["🌟 Orchestrator writes final synthesis"]
-    D --> E["Final answer delivered"]
-
-    style A1 fill:#4a90d9,color:#fff
-    style B1 fill:#e74c3c,color:#fff
-    style C1 fill:#f39c12,color:#fff
-    style A2 fill:#4a90d9,color:#fff
-    style B2 fill:#e74c3c,color:#fff
-    style C2 fill:#f39c12,color:#fff
-    style D fill:#9b59b6,color:#fff
-    style E fill:#2ecc71,color:#fff
-```
-
-1. **Draft** — Alpha, Beta, and Gamma all explore the problem independently from their angle
-2. **Improve** — Each agent reads the other two drafts and writes an improved version, stealing the best ideas
-3. **Synthesize** — The orchestrator authors the definitive response from the three improved drafts
-
-### Adversarial Mode 🗡️
-
-```mermaid
-flowchart TD
-    A1["📝 Alpha: thorough draft + self-critique"] & B1["✅ Beta: independent solution + fact-check"] & C1["🔧 Gamma: elegant alternative + devil's advocate"]
-    A1 & B1 & C1 --> T{"🎯 Orchestrator triages"}
-    T -- "full consensus" --> V
-    T -- "leader selected" --> ATK_B["⚔️ Beta attacks leader"]
-    T -- "leader selected" --> ATK_C["⚔️ Gamma attacks leader"]
-    ATK_B & ATK_C --> V["🏛️ Orchestrator delivers verdict"]
-    V --> E["SURVIVED ✅ / MODIFIED 🔄 / OVERTURNED ❌"]
-
-    style A1 fill:#4a90d9,color:#fff
-    style B1 fill:#e74c3c,color:#fff
-    style C1 fill:#f39c12,color:#fff
-    style T fill:#9b59b6,color:#fff
-    style ATK_B fill:#c0392b,color:#fff
-    style ATK_C fill:#c0392b,color:#fff
-    style V fill:#9b59b6,color:#fff
-    style E fill:#2ecc71,color:#fff
-```
-
-1. **Draft** — Alpha, Beta, and Gamma all tackle the problem independently
-2. **Triage** — The orchestrator uses a fixed rubric to identify the strongest position. If consensus, skip to verdict.
-3. **Attack** — The other two agents try to tear apart the leading position
-4. **Verdict** — The orchestrator decides: did the leader survive, need modification, or get overturned?
-
-## Prerequisites
-
-- [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/) installed and authenticated
-- Access to multiple models through Copilot (the defaults use Claude, GPT, and Gemini)
+The orchestrator only sees anonymized, reordered responses (Response A, B, C), so it cannot favor the seat that shares its model family.
 
 ## Install
 
-Agent Council is a Copilot CLI **plugin** — install it in one command and both the skill
-and the agent are registered automatically.
+Requirements: GitHub Copilot CLI, signed in, with access to models from at least two of the families in the [roster](#models).
 
 ```bash
-# Install straight from GitHub
-copilot plugin install Sentry01/AgentCouncil
+copilot plugin marketplace add Sentry01/AgentCouncil
+copilot plugin install agentcouncil@agentcouncil
 ```
 
-Or install from a local checkout (handy for hacking on it):
+Update to the latest release:
 
 ```bash
-git clone https://github.com/Sentry01/AgentCouncil.git
-copilot plugin install ./AgentCouncil
+copilot plugin marketplace update agentcouncil
+copilot plugin update agentcouncil@agentcouncil
 ```
 
-Manage it like any other plugin:
+Remove:
 
 ```bash
-copilot plugin list                  # confirm it's installed
-copilot plugin update agent-council  # re-snapshot after local edits
-copilot plugin uninstall agent-council
+copilot plugin uninstall agentcouncil@agentcouncil
 ```
 
-No dependencies. No build. Just markdown files and a `plugin.json` that Copilot CLI reads.
+You can also install straight from the repository with `copilot plugin install Sentry01/AgentCouncil` and update it with `copilot plugin update agentcouncil`. The marketplace route above makes new versions easier to discover.
 
-<details>
-<summary>Manual install (without the plugin system)</summary>
+### Upgrading from 1.x
+
+Version 2.0.0 renames the plugin to `agentcouncil` and changes the agent ID. Remove the old copies first so they do not load twice:
 
 ```bash
-git clone https://github.com/Sentry01/AgentCouncil.git
-cd AgentCouncil
-
-# Copy the skill
-mkdir -p ~/.copilot/skills/agent-council
-cp skills/agent-council/skill.md ~/.copilot/skills/agent-council/skill.md
-
-# Copy the agent
-mkdir -p ~/.copilot/agents
-cp agents/AgentCouncil.agent.md ~/.copilot/agents/AgentCouncil.agent.md
+copilot plugin uninstall agent-council                          # if you installed 1.x as a plugin
+rm -rf ~/.copilot/skills/agent-council ~/.copilot/agents/AgentCouncil.agent.md   # if you copied files by hand
 ```
 
-</details>
+See the [changelog](CHANGELOG.md) for everything that changed.
 
 ## Usage
 
-### Mode detection
+Start your message with a prefix:
 
-The council automatically detects which mode to use based on your language:
+| You type | Mode | Effort |
+|---|---|---|
+| `council: ...` | collaborative | chosen by task |
+| `brainstorm: ...` | collaborative | chosen by task |
+| `debate: ...` | adversarial | chosen by task |
+| `stress-test: ...` | adversarial | chosen by task |
+| `quick council: ...` | collaborative | light |
+| `full council: ...` | collaborative | full |
+| `collaborative council: ...` | collaborative | chosen by task |
+| `adversarial council: ...` | adversarial | chosen by task |
 
-| You say... | Mode | Why |
-|-----------|------|-----|
-| `council: How should we structure the API?` | 🤝 Collaborative | Default — exploring a design space |
-| `brainstorm: Novel approaches to caching` | 🤝 Collaborative | "brainstorm" = collaborative |
-| `debate: Monorepo vs polyrepo` | 🗡️ Adversarial | "debate" = adversarial |
-| `stress-test: Is this auth flow secure?` | 🗡️ Adversarial | "stress-test" = adversarial |
-| `adversarial council: Should we use GraphQL?` | 🗡️ Adversarial | Explicit override |
-| `collaborative council: Best testing strategy` | 🤝 Collaborative | Explicit override |
-
-**Adversarial triggers:** debate, adversarial, challenge, stress-test, which is better, argue, attack, defend, versus, vs
-
-**Collaborative triggers (default):** council, siege, swarm, brainstorm, collaborate, explore, build on, novel, creative, ideas
-
-If both sets of trigger words appear, adversarial wins unless you use an explicit override like `collaborative council: ...`.
-
-### Complexity gate
-
-The council should **short-circuit** and answer directly when the task is too simple to justify 6-7 subagent calls.
-
-Typical fast-path cases:
-- arithmetic or obvious factual lookups
-- one-line rewrites
-- file lookups and command syntax
-- narrow questions with one obvious path
-
-Typical council-worthy cases:
-- competing designs with real tradeoffs
-- security or correctness-sensitive review
-- architecture and research synthesis
-- ambiguous problems where multi-perspective synthesis can beat one model
-
-### Inside a Copilot CLI session
+Put `verbose` in front of any prefix to see each phase, or `raw` to see every seat's full output:
 
 ```
-council: Should we use a monorepo or polyrepo for our microservices?
+verbose debate: Sidekiq with Redis, or GoodJob on our existing Postgres?
 ```
 
-```
-debate: Redis vs Memcached for our session store — which survives at scale?
-```
+Without a prefix, Copilot can still load the skill when you ask for a second opinion from other models or when a task clearly benefits from one. In that case the mode follows your intent: choosing between options, validating a proposal or asking for a go/no-go goes adversarial. Asking for ideas, a design or a plan goes collaborative. Trivial requests (arithmetic, command syntax, one-line edits) are answered directly unless you use a prefix.
 
-### As a standalone agent
+### As an agent
 
 ```bash
-copilot --agent AgentCouncil "Brainstorm novel approaches to real-time sync"
+copilot --agent agentcouncil:agentcouncil -p "Kafka, NATS or Pulsar for 200 services? Latency matters more than retention."
 ```
 
-```bash
-copilot --agent AgentCouncil "Stress-test this auth flow for vulnerabilities"
-```
+In an interactive session, run `/agent` and pick AgentCouncil. Every message sent to the agent convenes a council.
 
-### Seeing the internal process
+### Choosing models
 
-By default you only get the final answer. If you want to see the reasoning flow:
+Name the models in your request to override the defaults for one council. The three seats must still come from different families:
 
 ```
-verbose council: What caching strategy for a real-time dashboard?
+council with sonnet, gpt-5.5 and gemini flash: how should we shard our events table?
 ```
 
-**Verbose mode** shows a concise phase-by-phase view:
-- 💡 Alpha / 🔨 Beta / ✨ Gamma
-- improved drafts or attack summaries
-- final synthesis or verdict
+A lower-cost roster that works well for everyday questions is `claude-sonnet-5.5`, `gpt-5.5` and `gemini-3.8-flash`.
 
-If you want every draft in full, ask for **raw** or **full** council output explicitly.
+## How it works
 
-## When to use each mode
+Before dispatching anything, the coordinator writes a short context brief (goal, constraints, relevant code or text, decisions already made) so every seat works from the same facts. Every seat and the orchestrator are instructed to work read-only: they may read files and search the web, but not edit anything. If you want the result applied, the coordinator does that after the council, through your normal tool approvals.
 
-### Collaborative 🤝 — when you want novel ideas
+### Collaborative (full)
 
-- Brainstorming sessions and creative problem-solving
-- Exploring a design space with no clear "right answer"
-- Building something new where diverse perspectives help
-- Research where breadth and synthesis matter
+```mermaid
+flowchart TD
+    A1["Alpha drafts: explores deeply"] & B1["Beta drafts: grounds in practice"] & C1["Gamma drafts: finds the simplest path"]
+    A1 & B1 & C1 --> X["Each seat reads the other two drafts"]
+    X --> A2["Alpha improves"] & B2["Beta improves"] & C2["Gamma improves"]
+    A2 & B2 & C2 --> D["Orchestrator synthesizes from anonymized versions"]
+```
 
-### Adversarial 🗡️ — when you want battle-tested answers
+1. **Draft**: Alpha, Beta and Gamma answer independently from their angle.
+2. **Improve**: each seat reads the other two drafts, adopts the best ideas and lists any unresolved tensions.
+3. **Synthesize**: the orchestrator resolves the tensions and writes the final answer. First-draft ideas that nobody kept are passed along as well, so minority views are not lost.
 
-- Architecture decisions you'll live with for years
-- Security reviews (missed vulns are expensive)
-- Comparing two specific approaches (A vs B)
-- Anything where you need confidence the answer holds up under scrutiny
+### Adversarial (full)
 
-### Not worth it (either mode)
+```mermaid
+flowchart TD
+    A1["Alpha: draft and self-critique"] & B1["Beta: independent answer and fact-check"] & C1["Gamma: simplest answer and devil's advocate"]
+    A1 & B1 & C1 --> T{"Orchestrator triage on anonymized drafts"}
+    T -- "full consensus" --> V
+    T -- "leader selected" --> K1["Non-leader seat attacks"] & K2["Non-leader seat attacks"]
+    K1 & K2 --> V["Orchestrator verdict: SURVIVED, MODIFIED or OVERTURNED"]
+```
 
-- Quick fixes, file lookups, simple questions
-- Anything where speed matters more than correctness
-- Your model budget is tight
+1. **Draft**: each seat answers independently and critiques the obvious approach.
+2. **Triage**: the orchestrator reads the anonymized drafts, rates consensus and picks the leading answer. On full consensus it skips straight to the verdict.
+3. **Attack**: the two other seats try to break the leading answer. On partial consensus they attack only the contested points.
+4. **Verdict**: the orchestrator rules SURVIVED, MODIFIED or OVERTURNED and notes what remains uncertain.
 
-## Cost & speed
+### Light
 
-| Mode | Subagent Calls | Parallel Rounds | Wall Clock |
-|------|----------------|-----------------|------------|
-| Collaborative | 7 (3 + 3 + orchestrator) | 2 | ~2 rounds + synthesis |
-| Adversarial | 6 (3 + 2 + orchestrator) | 2 | ~2 rounds + verdict |
+Each seat gives one concise answer from its angle, and the orchestrator merges them into one short answer. In adversarial mode, each seat also argues briefly against the obvious answer.
 
-Both modes run agents in parallel within each phase. The wall-clock time is roughly two sequential subagent calls plus the final orchestrator step, regardless of how many agents run in each round.
+### Focus by domain
 
-For trivial tasks, the correct move is to skip the council entirely.
+The coordinator classifies each task and gives every seat a focus line:
 
-## Adapting to domains
+| Domain | Alpha | Beta | Gamma |
+|---|---|---|---|
+| Code | Implementation and security self-review | API and version correctness, edge cases | Performance, readability, alternatives |
+| Architecture | System design and failure modes | Technology claims, benchmarks, scaling limits | Simplicity, operability, alternatives |
+| Research | Analysis and bias check | Source verification and citations | Actionability, counter-arguments |
+| Writing | Content and tone | Factual accuracy and consistency | Flow, concision, formatting |
 
-The agents shift focus depending on what you're asking about:
+## Models
 
-| Domain | Alpha focuses on | Beta focuses on | Gamma focuses on |
-|--------|-----------------|-----------------|------------------|
-| Code | Implementation + security self-review | API accuracy, versions, edge cases | Performance, readability, alternatives |
-| Architecture | System design + failure modes | Tech claims, benchmarks, scalability | Simplicity, clarity, alternatives |
-| Research | Comprehensive analysis + bias check | Source verification, citations | Actionability, counter-arguments |
-| Writing | Content + tone self-critique | Factual accuracy, consistency | Flow, conciseness, formatting |
+| Seat | Family | Default | Fallbacks |
+|---|---|---|---|
+| Alpha | Anthropic | `claude-opus-5.5` | `claude-sonnet-5.5` |
+| Beta | OpenAI | `gpt-6.1-sol` | `gpt-5.5` |
+| Gamma | Google | `gemini-4-argon` | `grok-4.7` (xAI), `gemini-3.8-flash` |
+| Orchestrator | any | `claude-opus-5.5` | `claude-sonnet-5.5`, then the session model |
 
-Domain precedence is: **Code → Architecture → Writing → Research → General**.
+The roster in [`skills/agentcouncil/SKILL.md`](skills/agentcouncil/SKILL.md) is the source of truth. CI fails if any other file names a model that is not in it.
 
-Here, **Research** means investigation or literature-style evaluation, not code review.
+- One seat per family. If a model is unavailable, the seat moves to its next fallback, then to any family that is not already seated. If only two families are available, the council runs with two seats.
+- Nothing is substituted silently. Every answer ends with a footer that lists the models that actually ran, and any fallbacks.
+- The AgentCouncil agent itself runs on `claude-sonnet-5.5`. It only routes and relays; the judgment happens in the orchestrator seat.
+
+Model availability changes often. See [Supported AI models in GitHub Copilot](https://docs.github.com/en/copilot/reference/ai-models/supported-models).
+
+## Cost and speed
+
+| Path | Subagent calls | Sequential rounds |
+|---|---|---|
+| Light | 4 | 2 |
+| Full collaborative | 7 | 3 |
+| Full adversarial | 7, or 5 on full consensus | 4, or 3 on full consensus |
+
+Calls within a round run in parallel, so wall-clock time grows with the number of rounds, not the number of calls. Each call uses model capacity, so a full council costs several times a single answer, and more when Opus-class models are seated. A light council on a short question took about 75 seconds in testing, and a full adversarial council about 5 minutes. Use `quick council:` or the lower-cost roster when cost matters, and skip the council for simple questions.
+
+## Where it works
+
+AgentCouncil is built for Copilot CLI, whose `task` tool lets each subagent run on a different model. Other clients that load Agent Skills may run the skill without per-subagent model selection. In that case all seats can end up on the same model and you lose the main benefit.
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| Footer shows a fallback model, or "Ran with 2 seats" | Your plan or organization policy disables a model or family. Ask an admin to enable it, or name other models in your request. |
+| `No such agent: AgentCouncil` | Plugin agents are namespaced. Use `--agent agentcouncil:agentcouncil`. |
+| The council runs on a trivial question | You used a prefix or the agent, which always convenes (light effort). Ask without a prefix for a direct answer. |
+| The council does not start | Use an explicit prefix such as `council:`. Check that `copilot plugin list` shows `agentcouncil`. |
+| Old behavior or duplicate skills | Remove 1.x copies (see [Upgrading from 1.x](#upgrading-from-1x)). |
 
 ## Example
 
-Here's the council in action — Phase 1 dispatching all three agents in parallel across different model families:
+Phase 1 dispatching all three seats in parallel. This screenshot is from version 1, so it shows the older default models.
 
-![Council Phase 1 — three agents dispatched in parallel](docs/council-example.png)
+![Council Phase 1: three agents dispatched in parallel](docs/council-example.png)
 
-## Example prompts
+## Development
 
-**Collaborative — brainstorming:**
-```
-council: Novel approaches to real-time collaboration in a document editor.
-Think beyond CRDTs and OT.
-```
-
-**Collaborative — architecture:**
-```
-council: Design a notification system that scales to 1M users.
-Push, pull, fan-out strategies.
+```bash
+copilot --plugin-dir .                       # load your working copy without installing it
+node scripts/validate.mjs                    # manifest, frontmatter, roster, links and style checks (runs in CI)
+node scripts/eval-routing.mjs --runs 2       # routing evals, needs Copilot CLI and gh auth
 ```
 
-**Adversarial — decision:**
-```
-debate: WebSockets + Redis pub/sub vs SSE + message queue for 10K concurrent users.
-Cost, complexity, scaling, failure modes.
-```
-
-**Adversarial — security:**
-```
-verbose stress-test: Review this JWT implementation: [paste code]
-```
-
-**Adversarial — comparison:**
-```
-debate: PostgreSQL vs DynamoDB for a multi-tenant SaaS with unpredictable query patterns
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the release process.
 
 ## Inspiration
 
-Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-council) — adapted as a Copilot CLI skill/agent with the dual-mode architecture.
+Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-council), including its anonymized peer review, adapted as a Copilot CLI skill and agent with collaborative and adversarial modes.
 
 ## License
 
-MIT — do whatever you want with it.
+MIT. See [LICENSE](LICENSE).

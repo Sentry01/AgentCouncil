@@ -1,25 +1,25 @@
 {
-  "name": "agent-council",
-  "description": "Throw three different AI models at a problem in parallel, then either have them build on each other's ideas (collaborative mode) or debate to stress-test the answer (adversarial mode) before an orchestrator delivers the final result. Ships a skill (trigger with `council:`, `debate:`, `brainstorm:`, `stress-test:`) and a standalone `AgentCouncil` agent. Automatically declines the council for trivial tasks.",
-  "version": "1.0.0",
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agentcouncil",
+  "description": "Multi-model council for Copilot CLI. Three subagents on different model families (Anthropic, OpenAI, Google) answer independently, then build on each other or attack the leading answer before an orchestrator writes the final result. Ships the agentcouncil skill and the AgentCouncil agent.",
+  "version": "2.0.0",
   "author": {
     "name": "Shlomi Shaki",
     "url": "https://github.com/Sentry01"
   },
-  "license": "MIT",
   "homepage": "https://github.com/Sentry01/AgentCouncil",
   "repository": "https://github.com/Sentry01/AgentCouncil",
+  "license": "MIT",
   "keywords": [
     "multi-agent",
+    "multi-model",
     "council",
     "debate",
     "brainstorm",
-    "orchestration",
-    "multi-model",
     "stress-test",
     "adversarial",
-    "collaborative"
-  ],
-  "skills": "skills/",
-  "agents": "agents/"
+    "collaborative",
+    "orchestration",
+    "second-opinion"
+  ]
 }

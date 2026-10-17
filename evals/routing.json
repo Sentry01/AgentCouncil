@@ -1,0 +1,137 @@
+{
+  "description": "Routing cases for the agentcouncil skill. context=session means the skill was loaded inside a normal Copilot CLI session; context=agent means the user is talking to the AgentCouncil custom agent. A null expectation means any value is accepted.",
+  "cases": [
+    {
+      "id": "prefix-council-beats-choice-intent",
+      "context": "session",
+      "prompt": "council: Should we use a monorepo or polyrepo for 40 microservices owned by 6 teams?",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "architecture" }
+    },
+    {
+      "id": "prefix-debate",
+      "context": "session",
+      "prompt": "debate: PostgreSQL vs DynamoDB for a multi-tenant SaaS with unpredictable query patterns",
+      "expect": { "convene": true, "effort": "full", "mode": "adversarial", "domain": "architecture" }
+    },
+    {
+      "id": "prefix-stress-test-code",
+      "context": "session",
+      "prompt": "stress-test: Is this refresh-token rotation secure?\n\n```ts\nexport async function refresh(req, res) {\n  const token = req.cookies.rt;\n  const row = await db.tokens.find(token);\n  if (!row) return res.status(401).end();\n  await db.tokens.delete(token);\n  const next = crypto.randomUUID();\n  await db.tokens.insert({ token: next, userId: row.userId });\n  res.cookie('rt', next, { httpOnly: true });\n  res.json({ access: sign(row.userId) });\n}\n```",
+      "expect": { "convene": true, "effort": "full", "mode": "adversarial", "domain": "code" }
+    },
+    {
+      "id": "prefix-brainstorm",
+      "context": "session",
+      "prompt": "brainstorm: Novel approaches to offline-first sync for a notes app. Think beyond CRDTs and OT.",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "architecture" }
+    },
+    {
+      "id": "implicit-arithmetic",
+      "context": "session",
+      "prompt": "What is 17 * 23?",
+      "expect": { "convene": false, "effort": null, "mode": null, "domain": null }
+    },
+    {
+      "id": "implicit-command-syntax",
+      "context": "session",
+      "prompt": "What's the git command to undo the last commit but keep the changes staged?",
+      "expect": { "convene": false, "effort": null, "mode": null, "domain": null }
+    },
+    {
+      "id": "implicit-one-line-edit",
+      "context": "session",
+      "prompt": "Rename the variable cnt to count in utils.py.",
+      "expect": { "convene": false, "effort": null, "mode": null, "domain": null }
+    },
+    {
+      "id": "explicit-trivial-runs-light",
+      "context": "session",
+      "prompt": "council: What is the capital of Australia?",
+      "expect": { "convene": true, "effort": "light", "mode": "collaborative", "domain": "general" }
+    },
+    {
+      "id": "agent-trivial-runs-light",
+      "context": "agent",
+      "prompt": "What is 2 + 2?",
+      "expect": { "convene": true, "effort": "light", "mode": null, "domain": "general" }
+    },
+    {
+      "id": "trap-vs-code-is-not-versus",
+      "context": "session",
+      "prompt": "My VS Code extension leaks memory every time the webview reloads. Help me design a fix and a regression test.",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "code" }
+    },
+    {
+      "id": "trap-challenge-as-noun",
+      "context": "session",
+      "prompt": "council: The main challenge is onboarding latency. Explore ideas to cut time-to-first-value for new users.",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "general" }
+    },
+    {
+      "id": "intent-choose-between-options",
+      "context": "session",
+      "prompt": "Which is better for our session store at 50k requests per second, Redis or Memcached? Get several models to weigh in.",
+      "expect": { "convene": true, "effort": "full", "mode": "adversarial", "domain": "architecture" }
+    },
+    {
+      "id": "intent-go-no-go",
+      "context": "session",
+      "prompt": "Get a second opinion from other models: we plan to ship the billing migration on Friday. 2 of 400 integration tests are flaky and rollback takes 40 minutes. Go or no-go?",
+      "expect": { "convene": true, "effort": "full", "mode": "adversarial", "domain": null }
+    },
+    {
+      "id": "intent-generate-options",
+      "context": "session",
+      "prompt": "Ask multiple models to come up with ways to make our internal docs site easier to search.",
+      "expect": { "convene": true, "effort": null, "mode": "collaborative", "domain": null }
+    },
+    {
+      "id": "override-adversarial-beats-brainstorm",
+      "context": "session",
+      "prompt": "adversarial council: brainstorm ideas for cutting our CI time in half",
+      "expect": { "convene": true, "effort": "full", "mode": "adversarial", "domain": null }
+    },
+    {
+      "id": "override-collaborative-beats-argue",
+      "context": "session",
+      "prompt": "collaborative council: argue for and against moving our services to Kubernetes",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "architecture" }
+    },
+    {
+      "id": "effort-full-keyword",
+      "context": "session",
+      "prompt": "full council: Write the launch blog post for our new CLI feature that lets users resume sessions across machines.",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "writing" }
+    },
+    {
+      "id": "effort-quick-keyword",
+      "context": "session",
+      "prompt": "quick council: Is it safe to run `git gc --aggressive` on a busy shared repo?",
+      "expect": { "convene": true, "effort": "light", "mode": null, "domain": null }
+    },
+    {
+      "id": "domain-research",
+      "context": "session",
+      "prompt": "council: What does the published evidence say about whether code review reduces defect rates? Summarize the literature.",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "research" }
+    },
+    {
+      "id": "domain-architecture-not-code-for-api-design",
+      "context": "session",
+      "prompt": "council: Design the data model and service API for a multi-region feature-flag service with audit history.",
+      "expect": { "convene": true, "effort": "full", "mode": "collaborative", "domain": "architecture" }
+    },
+    {
+      "id": "agent-choice-question",
+      "context": "agent",
+      "prompt": "Monorepo or polyrepo for a 30-engineer startup with one product?",
+      "expect": { "convene": true, "effort": null, "mode": "adversarial", "domain": "architecture" }
+    },
+    {
+      "id": "implicit-nontrivial-tradeoff",
+      "context": "session",
+      "prompt": "We need to pick an event bus for 200 services. Kafka, NATS or Pulsar? Latency matters more than retention.",
+      "expect": { "convene": true, "effort": "full", "mode": "adversarial", "domain": "architecture" }
+    }
+  ]
+}
