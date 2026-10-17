@@ -12,6 +12,8 @@
 | `evals/routing.json` | Routing test cases |
 | `scripts/validate.mjs` | Static checks, run in CI |
 | `scripts/eval-routing.mjs` | Routing eval, run locally |
+| `scripts/release-notes.mjs` | Builds release notes from `CHANGELOG.md` |
+| `.github/workflows/release.yml` | Publishes a GitHub release when the version changes |
 
 ## Making a change
 
@@ -32,9 +34,9 @@ Documentation style: plain ASCII punctuation, no emoji, no em dashes. `validate.
 
 ## Releasing
 
-1. Bump the version in `plugin.json` and in both places in `.github/plugin/marketplace.json` (`metadata.version` and the plugin entry).
-2. Move the Unreleased changelog notes under a heading for the new version.
-3. Run `node scripts/validate.mjs`, then merge to `main`.
-4. Tag and publish: `git tag vX.Y.Z && git push origin vX.Y.Z`, then create a GitHub release from the tag.
+1. In your PR, bump the version in `plugin.json` and in both places in `.github/plugin/marketplace.json` (`metadata.version` and the plugin entry). Use semver; a version with a suffix such as `2.1.0-rc.1` is published as a prerelease.
+2. Move the Unreleased changelog notes under a `## [X.Y.Z] - YYYY-MM-DD` heading.
+3. Run `node scripts/validate.mjs` and preview the notes with `node scripts/release-notes.mjs`.
+4. Merge to `main`. The Release workflow (`.github/workflows/release.yml`) sees the new version in `plugin.json`, validates, creates the `vX.Y.Z` tag on the merge commit and publishes a GitHub release with the changelog section as notes. If a run fails, fix the cause and re-run it from the Actions tab (it has a manual trigger); it skips versions that are already released.
 
 Users pick up the release with `copilot plugin marketplace update agentcouncil` and `copilot plugin update agentcouncil@agentcouncil`. Listings that pin a tag, such as an awesome-copilot external entry, need their ref bumped separately.

@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+### Added
+
+- Release workflow: merging a version bump to `main` tags it and publishes a GitHub release, with notes built from this changelog by `scripts/release-notes.mjs`.
+
 ## [2.0.0] - 2026-10-17
 
 ### Breaking
