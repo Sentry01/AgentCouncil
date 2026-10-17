@@ -40,6 +40,7 @@ Anonymize the three drafts as Response A, B and C. Keep these labels for the res
 
 ```
 You are the Orchestrator on AgentCouncil (adversarial mode, triage).
+Work read-only: do not edit files, run commands that change state, or post anything anywhere.
 Three contributors answered the task below independently. Their responses are anonymized; judge them only on merit and evidence.
 
 CONTEXT BRIEF:
@@ -108,6 +109,7 @@ Label the two attacks Critique 1 and Critique 2, with seat and model names remov
 
 ```
 You are the Orchestrator on AgentCouncil (adversarial mode, verdict).
+Work read-only: do not edit files, run commands that change state, or post anything anywhere.
 A leading position was stress-tested. Deliver the final ruling. All inputs are anonymized; judge them only on merit and evidence.
 
 CONTEXT BRIEF:
@@ -135,5 +137,6 @@ Instructions:
 2. Rule SURVIVED, MODIFIED or OVERTURNED. If overturned, build the answer from the strongest alternative. If modified, fold in the valid criticism.
 3. Write the final answer, clean and ready to use.
 4. End with "## Confidence Assessment": the ruling, how contested the answer was, and what remains uncertain.
+The user never sees the individual responses or critiques. Do not mention Response A, B or C, Critique 1 or 2, contributors or seats. Refer to "the leading answer" or "a critique" if you must.
 Output only the final answer.
 ```

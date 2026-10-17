@@ -92,7 +92,7 @@ A lower-cost roster that works well for everyday questions is `claude-sonnet-5.5
 
 ## How it works
 
-Before dispatching anything, the coordinator writes a short context brief (goal, constraints, relevant code or text, decisions already made) so every seat works from the same facts. Seats are told to work read-only. They may read files and search the web, but they never edit anything.
+Before dispatching anything, the coordinator writes a short context brief (goal, constraints, relevant code or text, decisions already made) so every seat works from the same facts. Every seat and the orchestrator are instructed to work read-only: they may read files and search the web, but not edit anything. If you want the result applied, the coordinator does that after the council, through your normal tool approvals.
 
 ### Collaborative (full)
 
@@ -164,7 +164,7 @@ Model availability changes often. See [Supported AI models in GitHub Copilot](ht
 | Full collaborative | 7 | 3 |
 | Full adversarial | 7, or 5 on full consensus | 4, or 3 on full consensus |
 
-Calls within a round run in parallel, so wall-clock time grows with the number of rounds, not the number of calls. Each call uses model capacity, so a full council costs several times a single answer, and more when Opus-class models are seated. A light council on a short question took about 75 seconds in testing. Use `quick council:` or the lower-cost roster when cost matters, and skip the council for simple questions.
+Calls within a round run in parallel, so wall-clock time grows with the number of rounds, not the number of calls. Each call uses model capacity, so a full council costs several times a single answer, and more when Opus-class models are seated. A light council on a short question took about 75 seconds in testing, and a full adversarial council about 5 minutes. Use `quick council:` or the lower-cost roster when cost matters, and skip the council for simple questions.
 
 ## Where it works
 

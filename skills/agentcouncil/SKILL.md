@@ -161,5 +161,5 @@ In adversarial mode, also show the triage result (consensus level, leading seat,
 - Never run more than one improve or attack round.
 - Do not force disagreement. Agreement between different model families is a signal.
 - Keep collaborative and adversarial prompts separate.
-- Subagents never modify files or external systems.
+- Every subagent prompt, including the orchestrator's, tells it to work read-only. Never ask a subagent to modify files or external systems; if the user wants changes applied, apply them yourself after the council, with the user's normal approvals.
 - Cost: light 4 subagent calls; full collaborative 7; full adversarial 7, or 5 when triage finds full consensus.
