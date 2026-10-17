@@ -1,0 +1,40 @@
+# Contributing
+
+## Layout
+
+| Path | Purpose |
+|---|---|
+| `skills/agentcouncil/SKILL.md` | Source of truth: routing, model roster, dispatch and output rules |
+| `skills/agentcouncil/references/` | Phase prompts, loaded only for the chosen path |
+| `com.github.copilot/agents/agentcouncil.agent.md` | Thin agent that loads the skill |
+| `plugin.json` | Agent Plugins 1.0 manifest |
+| `.github/plugin/marketplace.json` | Lets this repository act as a plugin marketplace |
+| `evals/routing.json` | Routing test cases |
+| `scripts/validate.mjs` | Static checks, run in CI |
+| `scripts/eval-routing.mjs` | Routing eval, run locally |
+
+## Making a change
+
+1. Edit the skill. Keep protocol logic in `SKILL.md` and `references/`; the agent should stay a thin wrapper.
+2. Load your working copy without installing it: `copilot --plugin-dir .`, then try a prompt such as `quick council: ...`.
+3. Run `node scripts/validate.mjs`.
+4. If you changed Steps 1 to 4 (routing), add cases to `evals/routing.json` and run `node scripts/eval-routing.mjs --runs 2`. It needs Copilot CLI and `gh auth login`, makes one model call per run, and uses a temporary `COPILOT_HOME` so your personal instructions and skills do not affect the result. Try `--model` with a model from another family too, since routing runs on whatever model the user's session uses.
+5. Add a line to the Unreleased section of `CHANGELOG.md`.
+
+Documentation style: plain ASCII punctuation, no emoji, no em dashes. `validate.mjs` enforces this. Never write a dollar sign directly before a digit in skill files, because skill loaders expand it as an argument placeholder.
+
+## Updating models
+
+1. Check [Supported AI models](https://docs.github.com/en/copilot/reference/ai-models/supported-models) and the [Copilot changelog](https://github.blog/changelog/) for retirements.
+2. Edit the roster table in `SKILL.md` (Step 6). Keep one family per seat.
+3. Run `node scripts/validate.mjs`. It fails if the README, agent or references still name a model that is not in the roster.
+4. Run one light council end to end with `copilot --plugin-dir .` and check the footer.
+
+## Releasing
+
+1. Bump the version in `plugin.json` and in both places in `.github/plugin/marketplace.json` (`metadata.version` and the plugin entry).
+2. Move the Unreleased changelog notes under a heading for the new version.
+3. Run `node scripts/validate.mjs`, then merge to `main`.
+4. Tag and publish: `git tag vX.Y.Z && git push origin vX.Y.Z`, then create a GitHub release from the tag.
+
+Users pick up the release with `copilot plugin marketplace update agentcouncil` and `copilot plugin update agentcouncil@agentcouncil`. Listings that pin a tag, such as an awesome-copilot external entry, need their ref bumped separately.

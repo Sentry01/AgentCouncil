@@ -1,4 +1,6 @@
-# Agent Council — Dual Mode Design
+# Agent Council - Dual Mode Design
+
+> Historical design document from February 2026. It describes version 1 and its model choices. Current behavior is defined in [`skills/agentcouncil/SKILL.md`](../../skills/agentcouncil/SKILL.md); see [CHANGELOG.md](../../CHANGELOG.md) for what changed.
 
 ## Problem
 
