@@ -23,7 +23,7 @@ copilot plugin marketplace add Sentry01/AgentCouncil
 copilot plugin install agentcouncil@agentcouncil
 ```
 
-Update to the latest release:
+Update to the latest release ([release notes](https://github.com/Sentry01/AgentCouncil/releases)):
 
 ```bash
 copilot plugin marketplace update agentcouncil

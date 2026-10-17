@@ -1,0 +1,44 @@
+name: Release
+
+# Publishes a GitHub release when plugin.json on main carries a version that
+# has no release yet. Notes come from the matching CHANGELOG.md section.
+on:
+  push:
+    branches: [main]
+    paths: [plugin.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate
+        run: node scripts/validate.mjs
+      - name: Read version
+        id: version
+        run: echo "version=$(node -p "require('./plugin.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Publish release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists, nothing to do."
+            exit 0
+          fi
+          node scripts/release-notes.mjs "$VERSION" > notes.md
+          flags=()
+          if [[ "$VERSION" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md "${flags[@]}"
