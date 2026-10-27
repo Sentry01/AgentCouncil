@@ -28,8 +28,18 @@ if (["major", "minor", "patch"].includes(arg)) {
   const [major, minor, patch] = current.split(".").map(Number);
   version = { major: `${major + 1}.0.0`, minor: `${major}.${minor + 1}.0`, patch: `${major}.${minor}.${patch + 1}` }[arg];
 }
-if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) die(`Not a semver version: ${version}`);
+// Strict SemVer prerelease identifiers, plus Git's rule that a ref cannot end in ".lock", so v<version> is always a valid tag.
+const ID = "(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)";
+if (!new RegExp(`^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-${ID}(?:\\.${ID})*)?$`).test(version) || version.endsWith(".lock")) {
+  die(`Not a semver version usable as a Git tag: ${version}`);
+}
 if (version === current) die(`plugin.json is already at ${version}.`);
+
+// Prepare every change before writing, so a rejected bump leaves all files untouched.
+const market = readJson(paths.market);
+const entry = (market.plugins || []).find((p) => p.name === plugin.name);
+if (!entry) die(`marketplace.json has no plugins[] entry named ${plugin.name}`);
+if (!market.metadata || typeof entry.source !== "object") die("marketplace.json needs a metadata object and an object plugin source; run node scripts/validate.mjs.");
 
 const lines = readFileSync(paths.changelog, "utf8").split("\n");
 if (lines.some((l) => l.startsWith(`## [${version}]`))) die(`CHANGELOG.md already has a ${version} section.`);
@@ -39,17 +49,13 @@ const next = lines.findIndex((l, i) => i > start && l.startsWith("## ["));
 if (!lines.slice(start + 1, next < 0 ? undefined : next).join("").trim()) die("The Unreleased section of CHANGELOG.md is empty. Add release notes first.");
 const date = new Date().toLocaleDateString("en-CA");
 lines.splice(start + 1, 0, "", `## [${version}] - ${date}`);
-writeFileSync(paths.changelog, lines.join("\n"));
-
 plugin.version = version;
-writeJson(paths.plugin, plugin);
-
-const market = readJson(paths.market);
-const entry = market.plugins.find((p) => p.name === plugin.name);
-if (!entry) die(`marketplace.json has no plugins[] entry named ${plugin.name}`);
 market.metadata.version = version;
 entry.version = version;
 entry.source.ref = `v${version}`;
+
+writeFileSync(paths.changelog, lines.join("\n"));
+writeJson(paths.plugin, plugin);
 writeJson(paths.market, market);
 
 console.log(`Bumped ${current} to ${version}. Installs will follow tag v${version} once the release is published.

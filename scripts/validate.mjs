@@ -25,7 +25,9 @@ const SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
 const PLUGIN_FIELDS = new Set(["$schema", "name", "version", "description", "author", "homepage", "repository", "license", "keywords", "extensions"]);
 const PLUGIN_NAME = /^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SKILL_NAME = /^[a-z0-9-]{1,64}$/;
-const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+// Strict SemVer (no build metadata); with the .lock check below, v<version> is always a valid Git tag.
+const SEMVER_ID = "(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)";
+const SEMVER = new RegExp(`^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-${SEMVER_ID}(?:\\.${SEMVER_ID})*)?$`);
 const MODEL_ID = /\b(?:claude|gpt|gemini|grok)-[a-z0-9]+(?:[.-][a-z0-9]+)*\b/g;
 const SHIPPED_DOCS = ["README.md", "CONTRIBUTING.md", "CHANGELOG.md"];
 
@@ -62,7 +64,7 @@ const plugin = readJson(pluginPath);
 if (plugin.$schema !== SCHEMA) fail(pluginPath, `$schema must be ${SCHEMA}`);
 for (const key of Object.keys(plugin)) if (!PLUGIN_FIELDS.has(key)) fail(pluginPath, `field not allowed by Agent Plugins 1.0: ${key}`);
 if (!PLUGIN_NAME.test(plugin.name || "") || plugin.name.length > 64) fail(pluginPath, "name must be lowercase letters, digits, dots or hyphens, 1-64 chars");
-if (!SEMVER.test(plugin.version || "")) fail(pluginPath, "version must be semver");
+if (!SEMVER.test(plugin.version || "") || plugin.version.endsWith(".lock")) fail(pluginPath, "version must be semver and usable as a Git tag");
 if (!plugin.description || plugin.description.length > 500) fail(pluginPath, "description must be 1-500 chars");
 if (!plugin.license) fail(pluginPath, "license is required");
 if (!plugin.author?.name) fail(pluginPath, "author.name is required");
