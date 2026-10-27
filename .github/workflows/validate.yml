@@ -18,3 +18,5 @@ jobs:
           node-version: 22
       - name: Validate plugin, skill, agent and docs
         run: node scripts/validate.mjs
+      - name: Check release notes build
+        run: node scripts/release-notes.mjs > /dev/null

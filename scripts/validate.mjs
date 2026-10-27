@@ -80,6 +80,12 @@ if (!entry) fail(marketPath, `no plugins[] entry named ${plugin.name}`);
 else {
   if (entry.version !== plugin.version) fail(marketPath, `plugin version ${entry.version} != plugin.json ${plugin.version}`);
   if (!entry.description) fail(marketPath, "plugin entry needs a description");
+  // Installs are pinned to the release tag, so users only receive published releases.
+  const repo = (plugin.repository || "").replace(/^https:\/\/github\.com\//, "");
+  const src = entry.source || {};
+  if (src.source !== "github" || src.repo !== repo || src.ref !== `v${plugin.version}` || src.path || src.sha) {
+    fail(marketPath, `plugin source must be {"source": "github", "repo": "${repo}", "ref": "v${plugin.version}"} so installs follow the release tag`);
+  }
 }
 if (market.metadata?.version !== plugin.version) fail(marketPath, `metadata.version must equal plugin.json version ${plugin.version}`);
 

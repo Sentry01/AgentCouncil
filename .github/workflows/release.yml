@@ -2,6 +2,8 @@ name: Release
 
 # Publishes a GitHub release when plugin.json on main carries a version that
 # has no release yet. Notes come from the matching CHANGELOG.md section.
+# Marketplace installs are pinned to the vX.Y.Z tag this creates, so users
+# receive the new version only once this workflow has published it.
 on:
   push:
     branches: [main]

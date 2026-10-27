@@ -13,6 +13,7 @@
 | `scripts/validate.mjs` | Static checks, run in CI |
 | `scripts/eval-routing.mjs` | Routing eval, run locally |
 | `scripts/release-notes.mjs` | Builds release notes from `CHANGELOG.md` |
+| `scripts/bump-version.mjs` | Sets the release version everywhere and dates the changelog |
 | `.github/workflows/release.yml` | Publishes a GitHub release when the version changes |
 
 ## Making a change
@@ -34,9 +35,12 @@ Documentation style: plain ASCII punctuation, no emoji, no em dashes. `validate.
 
 ## Releasing
 
-1. In your PR, bump the version in `plugin.json` and in both places in `.github/plugin/marketplace.json` (`metadata.version` and the plugin entry). Use semver; a version with a suffix such as `2.1.0-rc.1` is published as a prerelease.
-2. Move the Unreleased changelog notes under a `## [X.Y.Z] - YYYY-MM-DD` heading.
-3. Run `node scripts/validate.mjs` and preview the notes with `node scripts/release-notes.mjs`.
-4. Merge to `main`. The Release workflow (`.github/workflows/release.yml`) sees the new version in `plugin.json`, validates, creates the `vX.Y.Z` tag on the merge commit and publishes a GitHub release with the changelog section as notes. If a run fails, fix the cause and re-run it from the Actions tab (it has a manual trigger); it skips versions that are already released.
+Marketplace installs are pinned to a release tag: the plugin entry in `.github/plugin/marketplace.json` has `"source": {"source": "github", "repo": "Sentry01/AgentCouncil", "ref": "vX.Y.Z"}`. Merging to `main` without a version bump does not change what users get; publishing a release does.
+
+1. In your PR, run `node scripts/bump-version.mjs X.Y.Z` (or `patch`, `minor`, `major`). It sets the version in `plugin.json`, sets `metadata.version`, the plugin entry `version` and `source.ref` in `marketplace.json`, and moves the Unreleased changelog notes under a `## [X.Y.Z] - YYYY-MM-DD` heading. Use semver; a version with a suffix such as `2.1.0-rc.1` is published as a GitHub prerelease, but marketplace users still receive it, so test prereleases with `copilot --plugin-dir .` before merging.
+2. Run `node scripts/validate.mjs` (it fails if any of those fields disagree) and preview the notes with `node scripts/release-notes.mjs`.
+3. Merge to `main`. The Release workflow (`.github/workflows/release.yml`) sees the new version in `plugin.json`, validates, creates the `vX.Y.Z` tag on the merge commit and publishes a GitHub release with the changelog section as notes. Until the tag exists, `copilot plugin update` reports that the ref is missing and leaves the installed version in place. If a run fails, fix the cause and re-run it from the Actions tab (it has a manual trigger); it skips versions that are already released.
+
+Do not move or delete a published tag; installs of that version resolve it.
 
 Users pick up the release with `copilot plugin marketplace update agentcouncil` and `copilot plugin update agentcouncil@agentcouncil`. Listings that pin a tag, such as an awesome-copilot external entry, need their ref bumped separately.

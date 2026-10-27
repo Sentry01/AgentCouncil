@@ -7,6 +7,11 @@ All notable changes to this project are documented here. Versions follow [Semant
 ### Added
 
 - Release workflow: merging a version bump to `main` tags it and publishes a GitHub release, with notes built from this changelog by `scripts/release-notes.mjs`.
+- `scripts/bump-version.mjs` sets a new version in every manifest and moves the Unreleased notes under it.
+
+### Changed
+
+- Marketplace installs are pinned to the release tag (`vX.Y.Z`) instead of `main`, so `copilot plugin update` delivers published releases only. `validate.mjs` checks that the tag matches `plugin.json`, and CI now checks that release notes build.
 
 ## [2.0.0] - 2026-10-17
 
