@@ -23,7 +23,7 @@ copilot plugin marketplace add Sentry01/AgentCouncil
 copilot plugin install agentcouncil@agentcouncil
 ```
 
-Update to the latest release ([release notes](https://github.com/Sentry01/AgentCouncil/releases)):
+Update to the latest release ([release notes](https://github.com/Sentry01/AgentCouncil/releases)). The marketplace pins each version to its release tag, so you only receive published releases, never unreleased work on `main`:
 
 ```bash
 copilot plugin marketplace update agentcouncil
@@ -36,7 +36,7 @@ Remove:
 copilot plugin uninstall agentcouncil@agentcouncil
 ```
 
-You can also install straight from the repository with `copilot plugin install Sentry01/AgentCouncil` and update it with `copilot plugin update agentcouncil`. The marketplace route above makes new versions easier to discover.
+You can also install straight from the repository with `copilot plugin install Sentry01/AgentCouncil` and update it with `copilot plugin update agentcouncil`. That route tracks `main`, including unreleased changes. Use the marketplace route above to stay on releases.
 
 ### Upgrading from 1.x
 
