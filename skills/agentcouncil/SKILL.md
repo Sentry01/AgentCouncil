@@ -84,7 +84,7 @@ This roster is the single source of truth for model IDs.
 |---|---|---|---|
 | Alpha | Anthropic | `claude-opus-5.5` | `claude-sonnet-5.5` |
 | Beta | OpenAI | `gpt-6.1-sol` | `gpt-5.5` |
-| Gamma | Google | `gemini-4-argon` | `grok-4.7` (xAI), `gemini-3.8-flash` |
+| Gamma | Google | `gemini-4-carbon` | `gemini-4-argon`, `grok-4.7` (xAI) |
 | Orchestrator | any | `claude-opus-5.5` | `claude-sonnet-5.5`, then the current session model |
 
 **Diversity.** Alpha, Beta and Gamma must run on three different families. The orchestrator may share a family with a seat because it only sees anonymized inputs.

@@ -88,7 +88,7 @@ Name the models in your request to override the defaults for one council. The th
 council with sonnet, gpt-5.5 and gemini flash: how should we shard our events table?
 ```
 
-A lower-cost roster that works well for everyday questions is `claude-sonnet-5.5`, `gpt-5.5` and `gemini-3.8-flash`.
+For an alternate roster, name `claude-sonnet-5.5`, `gpt-5.5` and `gemini-4-argon`.
 
 ## How it works
 
@@ -145,7 +145,7 @@ The coordinator classifies each task and gives every seat a focus line:
 |---|---|---|---|
 | Alpha | Anthropic | `claude-opus-5.5` | `claude-sonnet-5.5` |
 | Beta | OpenAI | `gpt-6.1-sol` | `gpt-5.5` |
-| Gamma | Google | `gemini-4-argon` | `grok-4.7` (xAI), `gemini-3.8-flash` |
+| Gamma | Google | `gemini-4-carbon` | `gemini-4-argon`, `grok-4.7` (xAI) |
 | Orchestrator | any | `claude-opus-5.5` | `claude-sonnet-5.5`, then the session model |
 
 The roster in [`skills/agentcouncil/SKILL.md`](skills/agentcouncil/SKILL.md) is the source of truth. CI fails if any other file names a model that is not in it.
