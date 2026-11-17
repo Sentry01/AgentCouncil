@@ -11,6 +11,7 @@ All notable changes to this project are documented here. Versions follow [Semant
 
 ### Changed
 
+- Gamma now defaults to `gemini-4-carbon`, with `gemini-4-argon` then `grok-4.7` as fallbacks.
 - Marketplace installs are pinned to the release tag (`vX.Y.Z`) instead of `main`, so `copilot plugin update` delivers published releases only. `validate.mjs` checks that the tag matches `plugin.json`, and CI now checks that release notes build.
 
 ## [2.0.0] - 2026-10-17
